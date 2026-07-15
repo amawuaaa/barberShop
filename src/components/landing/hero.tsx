@@ -12,21 +12,19 @@ export function Hero() {
 
       <div className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-end px-4 pb-12 pt-24 sm:px-8 sm:pb-24 sm:pt-28">
         <div className="w-full min-w-0 max-w-3xl">
-          <p
-            className="brand-mark font-display animate-brand-reveal text-[var(--silver-light)]"
-            aria-label="Tu imagen habla antes que tú"
-          >
-            <span className="brand-mark__line">Tu imagen habla</span>
-            <span className="brand-mark__line">antes que tú</span>
-          </p>
+          <h1 className="hero-title font-display animate-brand-reveal text-[var(--silver-light)]">
+            <span className="hero-title__line">Tu imagen</span>
+            <span className="hero-title__line">habla antes</span>
+            <span className="hero-title__line">que tú</span>
+          </h1>
           <div
-            className="mt-4 h-px w-16 bg-[var(--silver)] sm:mt-5 sm:w-24 animate-line-draw"
+            className="mt-5 h-px w-16 bg-[var(--silver)] sm:mt-6 sm:w-24 animate-line-draw"
             aria-hidden
           />
-          <h1 className="mt-5 max-w-xl text-lg leading-snug text-[var(--silver)] sm:mt-6 sm:text-2xl animate-fade-up [animation-delay:200ms]">
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--silver)] sm:mt-6 sm:text-xl animate-fade-up [animation-delay:200ms]">
             Cada cita está pensada para quienes valoran su tiempo, el detalle y
             una atención personalizada.
-          </h1>
+          </p>
           <div className="mt-8 flex w-full flex-col gap-3 sm:mt-9 sm:w-auto sm:flex-row sm:flex-wrap animate-fade-up [animation-delay:320ms]">
             <a
               href="#reservar"

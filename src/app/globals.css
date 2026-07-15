@@ -119,35 +119,16 @@
   }
 }
 
-.brand-mark {
-  container-type: inline-size;
-  width: 100%;
-  min-width: 0;
+.hero-title {
+  margin: 0;
 }
 
-.brand-mark__line {
+.hero-title__line {
   display: block;
-  width: 100%;
   font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  /* Escala frases largas al ancho del contenedor */
-  font-size: min(2.75rem, calc(100cqw / 11));
-}
-
-@media (min-width: 640px) {
-  .brand-mark__line {
-    font-size: min(3.75rem, calc(100cqw / 10));
-  }
-}
-
-@media (min-width: 1280px) {
-  .brand-mark__line {
-    display: block;
-    font-size: clamp(3.5rem, 5vw, 4.75rem);
-    letter-spacing: -0.02em;
-  }
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  font-size: clamp(2.6rem, 11.5vw, 4.75rem);
 }
 
 .booking-panel {
