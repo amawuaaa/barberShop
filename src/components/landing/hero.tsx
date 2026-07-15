@@ -1,6 +1,6 @@
 export function Hero() {
   return (
-    <section className="relative isolate min-h-[100svh] overflow-x-clip bg-[var(--ink)]">
+    <section className="relative isolate min-h-[100svh] overflow-x-hidden bg-[var(--ink)]">
       <div
         className="pointer-events-none absolute inset-0"
         aria-hidden
@@ -10,14 +10,18 @@ export function Hero() {
         }}
       />
 
-      <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-end px-4 pb-12 pt-24 sm:px-8 sm:pb-24 sm:pt-28">
-        <div className="w-full max-w-3xl">
+      <div className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-end px-4 pb-12 pt-24 sm:px-8 sm:pb-24 sm:pt-28">
+        <div className="w-full min-w-0 max-w-3xl">
           <p
-            className="font-display animate-brand-reveal text-[var(--silver-light)] font-extrabold leading-[0.95] text-[clamp(2.75rem,14vw,3.75rem)] tracking-[0.04em] sm:text-7xl sm:tracking-[0.12em] md:text-8xl md:tracking-[0.14em]"
+            className="font-display animate-brand-reveal w-full min-w-0 font-extrabold text-[var(--silver-light)]"
             aria-label="SIGMABARBER"
           >
-            <span className="block sm:inline">SIGMA</span>
-            <span className="block sm:inline">BARBER</span>
+            <span className="block text-[clamp(2.5rem,15vw,4.5rem)] leading-[0.92] tracking-[0.02em] lg:inline lg:text-7xl lg:tracking-[0.1em] xl:text-8xl">
+              SIGMA
+            </span>
+            <span className="block text-[clamp(2.5rem,15vw,4.5rem)] leading-[0.92] tracking-[0.02em] lg:inline lg:text-7xl lg:tracking-[0.1em] xl:text-8xl">
+              BARBER
+            </span>
           </p>
           <div
             className="mt-4 h-px w-16 bg-[var(--silver)] sm:mt-5 sm:w-24 animate-line-draw"
@@ -27,7 +31,7 @@ export function Hero() {
             No es solo un corte — es un cambio de imagen.
           </h1>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-[var(--steel)] animate-fade-up [animation-delay:320ms]">
-            Reserva en minutos. Confirmación por WhatsApp y email.
+            Reserva en minutos. Flujo interactivo de demostración.
           </p>
           <div className="mt-8 flex w-full flex-col gap-3 sm:mt-9 sm:w-auto sm:flex-row sm:flex-wrap animate-fade-up [animation-delay:420ms]">
             <a

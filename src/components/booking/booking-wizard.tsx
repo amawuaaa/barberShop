@@ -153,7 +153,7 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
     >
       <BookingProgress currentStep={step} />
 
-      <div key={step} className="animate-fade-up min-h-[280px]">
+      <div key={step} className="animate-fade-up min-h-[320px] sm:min-h-[360px]">
         {step === 1 && (
           <ServiceStep
             services={services}
