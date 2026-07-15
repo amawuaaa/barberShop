@@ -119,6 +119,31 @@
   }
 }
 
+.brand-mark {
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
+}
+
+.brand-mark__line {
+  display: block;
+  width: 100%;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: 0;
+  white-space: nowrap;
+  /* Escala al ancho del contenedor para que quepa “BARBER” completa */
+  font-size: min(4rem, calc(100cqw / 7));
+}
+
+@media (min-width: 1280px) {
+  .brand-mark__line {
+    display: inline;
+    font-size: clamp(4.5rem, 7vw, 6rem);
+    letter-spacing: 0.08em;
+  }
+}
+
 .booking-panel {
   border: 1px solid var(--line);
   background: var(--mist);

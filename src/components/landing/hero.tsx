@@ -1,6 +1,6 @@
 export function Hero() {
   return (
-    <section className="relative isolate min-h-[100svh] overflow-x-hidden bg-[var(--ink)]">
+    <section className="relative isolate min-h-[100svh] bg-[var(--ink)]">
       <div
         className="pointer-events-none absolute inset-0"
         aria-hidden
@@ -13,15 +13,11 @@ export function Hero() {
       <div className="relative mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-end px-4 pb-12 pt-24 sm:px-8 sm:pb-24 sm:pt-28">
         <div className="w-full min-w-0 max-w-3xl">
           <p
-            className="font-display animate-brand-reveal w-full min-w-0 font-extrabold text-[var(--silver-light)]"
+            className="brand-mark font-display animate-brand-reveal text-[var(--silver-light)]"
             aria-label="SIGMABARBER"
           >
-            <span className="block text-[clamp(2.5rem,15vw,4.5rem)] leading-[0.92] tracking-[0.02em] lg:inline lg:text-7xl lg:tracking-[0.1em] xl:text-8xl">
-              SIGMA
-            </span>
-            <span className="block text-[clamp(2.5rem,15vw,4.5rem)] leading-[0.92] tracking-[0.02em] lg:inline lg:text-7xl lg:tracking-[0.1em] xl:text-8xl">
-              BARBER
-            </span>
+            <span className="brand-mark__line">SIGMA</span>
+            <span className="brand-mark__line">BARBER</span>
           </p>
           <div
             className="mt-4 h-px w-16 bg-[var(--silver)] sm:mt-5 sm:w-24 animate-line-draw"
