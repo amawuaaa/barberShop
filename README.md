@@ -1,59 +1,27 @@
-# SIGMABARBER — Agendamiento de citas
+# SIGMABARBER — Demo visual de reservas
 
-Base de aplicación Next.js para reservar citas online, con Prisma/SQLite, React Hook Form + Zod, y stubs listos para confirmaciones por **Email (Resend)** y **WhatsApp (Twilio)**.
+Landing + wizard interactivo para enseñar el flujo de citas. **Sin base de datos ni correos**: el catálogo es estático y la confirmación ocurre solo en el navegador.
 
 ## Stack
 
 - Next.js (App Router) + TypeScript
 - Tailwind CSS + shadcn/ui
-- Prisma ORM + SQLite
 - React Hook Form + Zod
 
 ## Arranque rápido
 
 ```bash
 npm install
-cp .env.example .env
-npx prisma migrate dev
-npm run db:seed
 npm run dev
 ```
 
 Abre [http://localhost:3000](http://localhost:3000).
 
-## Estructura relevante
+## Deploy (Vercel)
 
-```
-prisma/
-  schema.prisma          # Barber, Service, Appointment
-  seed.ts                # Datos de ejemplo
-src/
-  app/
-    page.tsx             # Landing + wizard
-    api/appointments/    # POST/GET reservas
-  components/
-    booking/             # Flujo paso a paso
-    landing/             # Hero y preview de servicios
-  lib/
-    prisma.ts
-    validations/         # Esquemas Zod
-    notifications.ts     # Stubs Resend + Twilio
-```
+1. Conecta el repo en Vercel
+2. Deploy — no hace falta `DATABASE_URL` ni variables de entorno
 
-## Flujo de reserva
+## Nota
 
-1. Servicio  
-2. Barbero  
-3. Fecha y hora (calendario)  
-4. Datos del cliente → `POST /api/appointments`
-
-Tras guardar la cita, la API invoca stubs de notificación en `src/lib/notifications.ts`. Sustituye esos stubs por las SDK de Resend y Twilio cuando tengas las API keys.
-
-## Scripts
-
-| Script | Descripción |
-|--------|-------------|
-| `npm run dev` | Servidor de desarrollo |
-| `npm run db:migrate` | Aplica migraciones |
-| `npm run db:seed` | Rellena servicios y barberos |
-| `npm run db:studio` | Prisma Studio |
+La carpeta `prisma/` queda como referencia para un backend real más adelante; la demo actual no la usa.

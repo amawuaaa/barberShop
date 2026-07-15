@@ -2,27 +2,14 @@ import { SiteHeader } from "@/components/landing/site-header";
 import { Hero } from "@/components/landing/hero";
 import { ServicesPreview } from "@/components/landing/services-preview";
 import { BookingWizard } from "@/components/booking/booking-wizard";
-import { prisma } from "@/lib/prisma";
+import { DEMO_BARBERS, DEMO_SERVICES } from "@/lib/catalog";
 
-export const dynamic = "force-dynamic";
-
-async function getCatalog() {
-  const [services, barbers] = await Promise.all([
-    prisma.service.findMany({ orderBy: { price: "asc" } }),
-    prisma.barber.findMany({ orderBy: { name: "asc" } }),
-  ]);
-
-  return { services, barbers };
-}
-
-export default async function HomePage() {
-  const { services, barbers } = await getCatalog();
-
+export default function HomePage() {
   return (
     <main className="flex-1 overflow-x-hidden bg-[var(--ink)] text-[var(--silver)]">
       <SiteHeader />
       <Hero />
-      <ServicesPreview services={services} />
+      <ServicesPreview services={DEMO_SERVICES} />
 
       <section id="reservar" className="scroll-mt-4 bg-[var(--ink)]">
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-8 sm:py-20">
@@ -31,10 +18,10 @@ export default async function HomePage() {
               Reserva tu cita
             </h2>
             <p className="text-sm text-[var(--silver)] sm:text-base">
-              Cuatro pasos. Sin llamadas. Confirmación al instante.
+              Cuatro pasos. Todo interactivo — demo sin envíos reales.
             </p>
           </header>
-          <BookingWizard services={services} barbers={barbers} />
+          <BookingWizard services={DEMO_SERVICES} barbers={DEMO_BARBERS} />
         </div>
       </section>
 
@@ -43,7 +30,7 @@ export default async function HomePage() {
           <p className="font-display font-bold tracking-[0.14em] text-[var(--silver-light)] sm:tracking-[0.18em]">
             SIGMABARBER
           </p>
-          <p className="text-[var(--steel)]">Citas · WhatsApp · Email</p>
+          <p className="text-[var(--steel)]">Demo visual · Sin correos</p>
         </div>
       </footer>
     </main>

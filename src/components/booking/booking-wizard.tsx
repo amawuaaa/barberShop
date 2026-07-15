@@ -76,25 +76,18 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
   function onSubmit(data: AppointmentFormValues) {
     setSubmitError(null);
 
-    startTransition(async () => {
-      try {
-        const response = await fetch("/api/appointments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
+    startTransition(() => {
+      const service = services.find((s) => s.id === data.serviceId);
+      const barber = barbers.find((b) => b.id === data.barberId);
 
-        const payload = await response.json();
-
-        if (!response.ok) {
-          setSubmitError(payload.error ?? "No se pudo completar la reserva");
-          return;
-        }
-
-        setConfirmation(payload.appointment);
-      } catch {
-        setSubmitError("Error de red. Inténtalo de nuevo.");
-      }
+      // Demo visual: confirmación local, sin API ni correos
+      setConfirmation({
+        id: `DEMO-${Date.now().toString(36).toUpperCase()}`,
+        service: service?.name ?? "—",
+        barber: barber?.name ?? "—",
+        date: data.date,
+        time: data.time,
+      });
     });
   }
 
@@ -107,8 +100,8 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
             Cita reservada
           </h3>
           <p className="max-w-md text-[var(--silver)]">
-            Gracias. Te enviaremos la confirmación por email y WhatsApp en cuanto
-            las integraciones estén activas.
+            Demo lista. No se guarda nada ni se envía email o WhatsApp — solo
+            para enseñar el flujo.
           </p>
         </div>
         <dl className="grid gap-2 border border-[var(--line)] bg-[var(--ink)] px-4 py-3 text-sm">

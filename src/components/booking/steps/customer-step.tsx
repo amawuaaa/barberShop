@@ -30,7 +30,7 @@ export function CustomerStep({
           Tus datos
         </h3>
         <p className="text-sm text-[var(--silver)]">
-          Te enviaremos la confirmación por email y WhatsApp.
+          En la demo no se envía nada; solo completamos el flujo.
         </p>
       </header>
 
