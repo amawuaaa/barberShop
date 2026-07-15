@@ -3,14 +3,14 @@ import Link from "next/link";
 export function SiteHeader() {
   return (
     <header className="absolute inset-x-0 top-0 z-20">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-8 sm:py-5">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-4 sm:gap-3 sm:px-8 sm:py-5">
         <Link
           href="/"
-          className="min-w-0 truncate font-display text-base font-bold tracking-[0.12em] text-[var(--silver-light)] transition-colors hover:text-[var(--silver)] sm:text-lg sm:tracking-[0.18em]"
+          className="shrink font-display text-[0.7rem] font-bold tracking-[0.06em] text-[var(--silver-light)] transition-colors hover:text-[var(--silver)] min-[380px]:text-xs sm:text-lg sm:tracking-[0.16em]"
         >
           SIGMABARBER
         </Link>
-        <nav className="flex shrink-0 items-center gap-3 text-sm text-[var(--silver)] sm:gap-6">
+        <nav className="flex shrink-0 items-center gap-2.5 text-sm text-[var(--silver)] sm:gap-6">
           <a
             href="#servicios"
             className="transition-colors hover:text-[var(--silver-light)]"

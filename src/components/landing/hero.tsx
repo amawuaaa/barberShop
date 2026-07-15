@@ -1,6 +1,6 @@
 export function Hero() {
   return (
-    <section className="relative isolate min-h-[100svh] overflow-hidden bg-[var(--ink)]">
+    <section className="relative isolate min-h-[100svh] overflow-x-clip bg-[var(--ink)]">
       <div
         className="pointer-events-none absolute inset-0"
         aria-hidden
@@ -11,9 +11,13 @@ export function Hero() {
       />
 
       <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-end px-4 pb-12 pt-24 sm:px-8 sm:pb-24 sm:pt-28">
-        <div className="max-w-3xl">
-          <p className="font-display text-[clamp(2.4rem,12vw,5.5rem)] font-extrabold leading-[0.92] tracking-[0.08em] text-[var(--silver-light)] sm:tracking-[0.14em] animate-brand-reveal">
-            SIGMABARBER
+        <div className="w-full max-w-3xl">
+          <p
+            className="font-display animate-brand-reveal text-[var(--silver-light)] font-extrabold leading-[0.95] text-[clamp(2.75rem,14vw,3.75rem)] tracking-[0.04em] sm:text-7xl sm:tracking-[0.12em] md:text-8xl md:tracking-[0.14em]"
+            aria-label="SIGMABARBER"
+          >
+            <span className="block sm:inline">SIGMA</span>
+            <span className="block sm:inline">BARBER</span>
           </p>
           <div
             className="mt-4 h-px w-16 bg-[var(--silver)] sm:mt-5 sm:w-24 animate-line-draw"
