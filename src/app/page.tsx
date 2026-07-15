@@ -1,65 +1,51 @@
-import Image from "next/image";
+import { SiteHeader } from "@/components/landing/site-header";
+import { Hero } from "@/components/landing/hero";
+import { ServicesPreview } from "@/components/landing/services-preview";
+import { BookingWizard } from "@/components/booking/booking-wizard";
+import { prisma } from "@/lib/prisma";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+async function getCatalog() {
+  const [services, barbers] = await Promise.all([
+    prisma.service.findMany({ orderBy: { price: "asc" } }),
+    prisma.barber.findMany({ orderBy: { name: "asc" } }),
+  ]);
+
+  return { services, barbers };
+}
+
+export default async function HomePage() {
+  const { services, barbers } = await getCatalog();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="flex-1 overflow-x-hidden bg-[var(--ink)] text-[var(--silver)]">
+      <SiteHeader />
+      <Hero />
+      <ServicesPreview services={services} />
+
+      <section id="reservar" className="scroll-mt-4 bg-[var(--ink)]">
+        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-8 sm:py-20">
+          <header className="mb-6 space-y-2 text-center animate-fade-up sm:mb-8">
+            <h2 className="font-display text-2xl font-bold tracking-[0.08em] text-[var(--silver-light)] sm:text-4xl">
+              Reserva tu cita
+            </h2>
+            <p className="text-sm text-[var(--silver)] sm:text-base">
+              Cuatro pasos. Sin llamadas. Confirmación al instante.
+            </p>
+          </header>
+          <BookingWizard services={services} barbers={barbers} />
+        </div>
+      </section>
+
+      <footer className="border-t border-[var(--line)] bg-[var(--paper-warm)]">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-[var(--silver)] sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <p className="font-display font-bold tracking-[0.14em] text-[var(--silver-light)] sm:tracking-[0.18em]">
+            SIGMABARBER
           </p>
+          <p className="text-[var(--steel)]">Citas · WhatsApp · Email</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </footer>
+    </main>
   );
 }
