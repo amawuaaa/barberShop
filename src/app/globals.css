@@ -129,18 +129,24 @@
   display: block;
   width: 100%;
   font-weight: 800;
-  line-height: 0.9;
-  letter-spacing: 0;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
   white-space: nowrap;
-  /* Escala al ancho del contenedor para que quepa “BARBER” completa */
-  font-size: min(4rem, calc(100cqw / 7));
+  /* Escala frases largas al ancho del contenedor */
+  font-size: min(2.75rem, calc(100cqw / 11));
+}
+
+@media (min-width: 640px) {
+  .brand-mark__line {
+    font-size: min(3.75rem, calc(100cqw / 10));
+  }
 }
 
 @media (min-width: 1280px) {
   .brand-mark__line {
-    display: inline;
-    font-size: clamp(4.5rem, 7vw, 6rem);
-    letter-spacing: 0.08em;
+    display: block;
+    font-size: clamp(3.5rem, 5vw, 4.75rem);
+    letter-spacing: -0.02em;
   }
 }
 

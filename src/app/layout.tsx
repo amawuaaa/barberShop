@@ -16,7 +16,7 @@ const sans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "SIGMABARBER — Cambio de imagen",
   description:
-    "SIGMABARBER. No es solo un corte — es un cambio de imagen. Reserva online con confirmación por WhatsApp y email.",
+    "SIGMABARBER. Tu imagen habla antes que tú. Reserva online tu cita con atención personalizada.",
 };
 
 export const viewport = {

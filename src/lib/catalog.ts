@@ -10,14 +10,14 @@ export const DEMO_SERVICES: ServiceOption[] = [
 
 export const DEMO_BARBERS: BarberOption[] = [
   {
-    id: "barber-diego",
-    name: "Diego Morales",
-    specialty: "Cortes fade & textura",
+    id: "barber-marcos",
+    name: "Marcos Llanos",
+    specialty: "Cortes fade y textura",
   },
   {
     id: "barber-lucas",
     name: "Lucas Herrera",
-    specialty: "Barba & afeitado clásico",
+    specialty: "Barba y afeitado clásico",
   },
   {
     id: "barber-mateo",

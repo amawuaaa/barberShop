@@ -25,10 +25,10 @@ async function main() {
 
   const barbers = await Promise.all([
     prisma.barber.create({
-      data: { name: "Diego Morales", specialty: "Cortes fade & textura" },
+      data: { name: "Marcos Llanos", specialty: "Cortes fade y textura" },
     }),
     prisma.barber.create({
-      data: { name: "Lucas Herrera", specialty: "Barba & afeitado clásico" },
+      data: { name: "Lucas Herrera", specialty: "Barba y afeitado clásico" },
     }),
     prisma.barber.create({
       data: { name: "Mateo Ruiz", specialty: "Estilo contemporáneo" },
