@@ -1,27 +1,68 @@
-# SIGMABARBER — Demo visual de reservas
+# SIGMABARBER — Reservas con Postgres
 
-Landing + wizard interactivo para enseñar el flujo de citas. **Sin base de datos ni correos**: el catálogo es estático y la confirmación ocurre solo en el navegador.
+Aplicación de citas para barbería: wizard de reserva, disponibilidad real por barbero, bloqueo de slots y panel mínimo del dueño.
 
 ## Stack
 
 - Next.js (App Router) + TypeScript
 - Tailwind CSS + shadcn/ui
+- Prisma + **PostgreSQL**
 - React Hook Form + Zod
 
-## Arranque rápido
+## Arranque local (Docker)
 
 ```bash
-npm install
+# 1) Postgres
+npm run db:up
+
+# 2) Entorno
+cp .env.example .env
+
+# 3) Migraciones + datos demo
+npx prisma migrate dev
+npm run db:seed
+
+# 4) App
 npm run dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000).
+- Web: [http://localhost:3000](http://localhost:3000)
+- Panel dueño: [http://localhost:3000/admin](http://localhost:3000/admin)  
+  Contraseña por defecto en `.env`: `sigmabarber-admin`
 
-## Deploy (Vercel)
+## Qué incluye
 
-1. Conecta el repo en Vercel
-2. Deploy — no hace falta `DATABASE_URL` ni variables de entorno
+| Pieza | Descripción |
+|--------|-------------|
+| `BarberAvailability` | Horario semanal por barbero (pausa incluida) |
+| `/api/availability` | Slots libres (oculta ocupados / pasados) |
+| `/api/appointments` | Crea cita + comprueba solapes |
+| `/admin` | Lista citas del día y cambia estado |
+| Notificaciones | Stubs Resend / Twilio en `src/lib/notifications.ts` |
 
-## Nota
+Estados de cita: `PENDING` → `CONFIRMED` → `COMPLETED` / `CANCELLED`.
 
-La carpeta `prisma/` queda como referencia para un backend real más adelante; la demo actual no la usa.
+## Staging / producción (Neon, Supabase, Railway)
+
+1. Crea un proyecto Postgres en Neon, Supabase o Railway.
+2. Copia la connection string a `DATABASE_URL` (con `?sslmode=require` si aplica).
+3. En el hosting (Vercel):
+
+```bash
+npx prisma migrate deploy
+npm run db:seed   # solo la primera vez
+```
+
+4. Define también `ADMIN_PASSWORD` y `ADMIN_SECRET`.
+
+Local sigue usando Docker; staging usa la URL remota. Mismo schema Prisma.
+
+## Scripts útiles
+
+| Script | Acción |
+|--------|--------|
+| `npm run db:up` | Levanta Postgres |
+| `npm run db:down` | Para Postgres |
+| `npm run db:migrate` | Migraciones |
+| `npm run db:seed` | Servicios, barberos y horarios |
+| `npm run db:studio` | Prisma Studio |

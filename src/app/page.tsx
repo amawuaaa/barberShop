@@ -2,14 +2,33 @@ import { SiteHeader } from "@/components/landing/site-header";
 import { Hero } from "@/components/landing/hero";
 import { ServicesPreview } from "@/components/landing/services-preview";
 import { BookingWizard } from "@/components/booking/booking-wizard";
-import { DEMO_BARBERS, DEMO_SERVICES } from "@/lib/catalog";
+import { prisma } from "@/lib/prisma";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+async function getCatalog() {
+  const [services, barbers] = await Promise.all([
+    prisma.service.findMany({
+      where: { active: true },
+      orderBy: { price: "asc" },
+    }),
+    prisma.barber.findMany({
+      where: { active: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+
+  return { services, barbers };
+}
+
+export default async function HomePage() {
+  const { services, barbers } = await getCatalog();
+
   return (
     <main className="flex-1 overflow-x-hidden bg-[var(--ink)] text-[var(--silver)]">
       <SiteHeader />
       <Hero />
-      <ServicesPreview services={DEMO_SERVICES} />
+      <ServicesPreview services={services} />
 
       <section id="reservar" className="scroll-mt-4 bg-[var(--ink)]">
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-8 sm:py-20">
@@ -18,10 +37,10 @@ export default function HomePage() {
               Reserva tu cita
             </h2>
             <p className="text-sm text-[var(--silver)] sm:text-base">
-              Cuatro pasos. Todo interactivo — demo sin envíos reales.
+              Cuatro pasos. Horarios reales según disponibilidad del barbero.
             </p>
           </header>
-          <BookingWizard services={DEMO_SERVICES} barbers={DEMO_BARBERS} />
+          <BookingWizard services={services} barbers={barbers} />
         </div>
       </section>
 
@@ -30,7 +49,12 @@ export default function HomePage() {
           <p className="font-display font-bold tracking-[0.14em] text-[var(--silver-light)] sm:tracking-[0.18em]">
             SIGMABARBER
           </p>
-          <p className="text-[var(--steel)]">Demo visual · Sin correos</p>
+          <p className="text-[var(--steel)]">
+            Citas en vivo ·{" "}
+            <a href="/admin" className="underline-offset-2 hover:underline">
+              Panel
+            </a>
+          </p>
         </div>
       </footer>
     </main>

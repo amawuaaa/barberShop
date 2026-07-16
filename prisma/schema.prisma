@@ -1,39 +1,58 @@
-// Prisma schema — Barbershop appointment booking
-// Provider: SQLite (local development)
+// Prisma schema — SIGMABARBER
+// Provider: PostgreSQL (Docker local / Neon · Supabase · Railway en staging)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-/// Professional who delivers the service
 model Barber {
-  id           String        @id @default(cuid())
-  name         String
-  specialty    String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  appointments Appointment[]
+  id             String               @id @default(cuid())
+  name           String
+  specialty      String
+  active         Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  appointments   Appointment[]
+  availabilities BarberAvailability[]
 }
 
-/// Bookable service (haircut, beard, etc.)
 model Service {
   id           String        @id @default(cuid())
   name         String
-  /// Estimated duration in minutes
+  /// Duración estimada en minutos
   duration     Int
-  /// Price in cents (e.g. 2500 = €25.00) to avoid float issues
+  /// Precio en céntimos (1800 = 18 €)
   price        Int
+  active       Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]
 }
 
-/// Appointment status
+/// Horario semanal por barbero (0=domingo … 6=sábado)
+model BarberAvailability {
+  id         String @id @default(cuid())
+  barberId   String
+  barber     Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  /// Pausa (comida). Null = sin pausa.
+  breakStart String?
+  breakEnd   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([barberId, dayOfWeek])
+  @@index([barberId])
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -41,29 +60,28 @@ enum AppointmentStatus {
   COMPLETED
 }
 
-/// Client booking linked to a barber and a service
 model Appointment {
-  id        String            @id @default(cuid())
-  /// Optional external client identifier (CRM / auth id)
-  clientId  String?
-  name      String
-  phone     String
-  email     String
-  /// Calendar date of the appointment (YYYY-MM-DD stored as DateTime at midnight UTC)
-  date      DateTime
-  /// Time slot in HH:mm (24h), e.g. "10:30"
-  time      String
-  status    AppointmentStatus @default(PENDING)
+  id       String            @id @default(cuid())
+  clientId String?
+  name     String
+  phone    String
+  email    String
+  /// Día de la cita (medianoche UTC)
+  date     DateTime          @db.Date
+  /// Hora de inicio HH:mm
+  time     String
+  status   AppointmentStatus @default(PENDING)
 
-  barberId  String
-  barber    Barber            @relation(fields: [barberId], references: [id])
+  barberId String
+  barber   Barber            @relation(fields: [barberId], references: [id])
 
   serviceId String
-  service   Service           @relation(fields: [serviceId], references: [id])
+  service   Service          @relation(fields: [serviceId], references: [id])
 
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([date, barberId])
+  @@index([status])
   @@index([email])
 }

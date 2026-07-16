@@ -20,27 +20,6 @@ export const BOOKING_STEPS = [
   { id: 4 as const, label: "Tus datos" },
 ];
 
-/** Horarios disponibles de ejemplo (lun–sáb) */
-export const TIME_SLOTS = [
-  "09:00",
-  "09:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "12:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-  "18:00",
-  "18:30",
-  "19:00",
-] as const;
-
 export function formatPrice(cents: number, locale = "es-ES", currency = "EUR") {
   return new Intl.NumberFormat(locale, {
     style: "currency",

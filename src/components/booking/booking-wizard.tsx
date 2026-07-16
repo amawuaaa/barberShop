@@ -31,6 +31,7 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
     barber: string;
     date: string;
     time: string;
+    status: string;
   } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -76,18 +77,25 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
   function onSubmit(data: AppointmentFormValues) {
     setSubmitError(null);
 
-    startTransition(() => {
-      const service = services.find((s) => s.id === data.serviceId);
-      const barber = barbers.find((b) => b.id === data.barberId);
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/appointments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
 
-      // Demo visual: confirmación local, sin API ni correos
-      setConfirmation({
-        id: `DEMO-${Date.now().toString(36).toUpperCase()}`,
-        service: service?.name ?? "—",
-        barber: barber?.name ?? "—",
-        date: data.date,
-        time: data.time,
-      });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          setSubmitError(payload.error ?? "No se pudo completar la reserva");
+          return;
+        }
+
+        setConfirmation(payload.appointment);
+      } catch {
+        setSubmitError("Error de red. Inténtalo de nuevo.");
+      }
     });
   }
 
@@ -100,18 +108,26 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
             Cita reservada
           </h3>
           <p className="max-w-md text-[var(--silver)]">
-            Demo lista. No se guarda nada ni se envía email o WhatsApp — solo
-            para enseñar el flujo.
+            Tu cita quedó registrada como{" "}
+            <span className="text-[var(--silver-light)]">
+              {confirmation.status === "PENDING" ? "pendiente" : confirmation.status}
+            </span>
+            . Te enviaremos confirmación por email y WhatsApp cuando las
+            integraciones estén activas.
           </p>
         </div>
         <dl className="grid gap-2 border border-[var(--line)] bg-[var(--ink)] px-4 py-3 text-sm">
           <div className="flex justify-between gap-4">
             <dt className="text-[var(--steel)]">Servicio</dt>
-            <dd className="font-medium text-[var(--silver-light)]">{confirmation.service}</dd>
+            <dd className="font-medium text-[var(--silver-light)]">
+              {confirmation.service}
+            </dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-[var(--steel)]">Barbero</dt>
-            <dd className="font-medium text-[var(--silver-light)]">{confirmation.barber}</dd>
+            <dd className="font-medium text-[var(--silver-light)]">
+              {confirmation.barber}
+            </dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-[var(--steel)]">Cuándo</dt>
@@ -121,7 +137,9 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-[var(--steel)]">Referencia</dt>
-            <dd className="font-mono text-xs text-[var(--silver)]">{confirmation.id}</dd>
+            <dd className="font-mono text-xs text-[var(--silver)]">
+              {confirmation.id}
+            </dd>
           </div>
         </dl>
         <Button
@@ -150,6 +168,7 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
     <form
       onSubmit={handleSubmit(onSubmit)}
       className="booking-panel space-y-6 px-4 py-6 sm:space-y-8 sm:px-8 sm:py-8"
+      id="reservar-form"
     >
       <BookingProgress currentStep={step} />
 
@@ -160,6 +179,9 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
             selectedId={values.serviceId}
             onSelect={(id) => {
               setValue("serviceId", id, { shouldValidate: true });
+              // Al cambiar servicio se invalidan fecha/hora (duración distinta)
+              setValue("date", "");
+              setValue("time", "");
             }}
           />
         )}
@@ -169,11 +191,15 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
             selectedId={values.barberId}
             onSelect={(id) => {
               setValue("barberId", id, { shouldValidate: true });
+              setValue("date", "");
+              setValue("time", "");
             }}
           />
         )}
         {step === 3 && (
           <DateTimeStep
+            barberId={values.barberId}
+            serviceId={values.serviceId}
             selectedDate={values.date}
             selectedTime={values.time}
             onSelectDate={(date) => setValue("date", date, { shouldValidate: true })}

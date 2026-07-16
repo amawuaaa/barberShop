@@ -1,12 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { es } from "date-fns/locale";
 import { format, isBefore, startOfDay } from "date-fns";
+import { Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { TIME_SLOTS } from "@/types/booking";
 
 type DateTimeStepProps = {
+  barberId: string;
+  serviceId: string;
   selectedDate: string;
   selectedTime: string;
   onSelectDate: (date: string) => void;
@@ -14,14 +17,60 @@ type DateTimeStepProps = {
 };
 
 export function DateTimeStep({
+  barberId,
+  serviceId,
   selectedDate,
   selectedTime,
   onSelectDate,
   onSelectTime,
 }: DateTimeStepProps) {
+  const [slots, setSlots] = useState<string[]>([]);
+  const [reason, setReason] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   const selected = selectedDate
     ? new Date(`${selectedDate}T12:00:00`)
     : undefined;
+
+  useEffect(() => {
+    if (!selectedDate || !barberId || !serviceId) {
+      setSlots([]);
+      setReason(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    setLoading(true);
+    setReason(null);
+
+    const params = new URLSearchParams({
+      barberId,
+      serviceId,
+      date: selectedDate,
+    });
+
+    fetch(`/api/availability?${params}`, { signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) {
+          setSlots([]);
+          setReason(payload.error ?? "No se pudo cargar disponibilidad");
+          return;
+        }
+        setSlots(payload.slots ?? []);
+        setReason(payload.reason ?? null);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        setSlots([]);
+        setReason("Error de red al cargar horarios");
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, [selectedDate, barberId, serviceId]);
 
   return (
     <div className="space-y-4">
@@ -30,7 +79,7 @@ export function DateTimeStep({
           Fecha y hora
         </h3>
         <p className="text-sm text-[var(--silver)]">
-          Elige un día y un hueco disponible.
+          Solo se muestran huecos libres según el horario del barbero.
         </p>
       </header>
 
@@ -60,20 +109,30 @@ export function DateTimeStep({
               : "Selecciona una fecha para ver horarios"}
           </p>
 
+          {loading && (
+            <p className="inline-flex items-center gap-2 text-sm text-[var(--steel)]">
+              <Loader2 className="size-4 animate-spin" />
+              Cargando disponibilidad…
+            </p>
+          )}
+
+          {!loading && selectedDate && slots.length === 0 && (
+            <p className="text-sm text-[var(--steel)]">
+              {reason ?? "No hay huecos libres este día."}
+            </p>
+          )}
+
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {TIME_SLOTS.map((slot) => {
+            {slots.map((slot) => {
               const active = slot === selectedTime;
-              const disabled = !selectedDate;
 
               return (
                 <button
                   key={slot}
                   type="button"
-                  disabled={disabled}
                   onClick={() => onSelectTime(slot)}
                   className={cn(
                     "min-h-11 border px-2 py-2.5 text-sm transition-all duration-200",
-                    "disabled:cursor-not-allowed disabled:opacity-40",
                     active
                       ? "border-[var(--silver-light)] bg-[var(--silver-light)] text-[var(--ink)]"
                       : "border-[var(--line)] bg-[var(--ink)] text-[var(--silver)] hover:border-[var(--silver)] hover:text-[var(--silver-light)]"

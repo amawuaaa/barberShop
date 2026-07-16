@@ -2,9 +2,17 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+/** Lun–sáb 09:00–19:00 con pausa 13:00–15:00. Domingo cerrado. */
+const WEEKDAY_SCHEDULE = {
+  startTime: "09:00",
+  endTime: "19:00",
+  breakStart: "13:00",
+  breakEnd: "15:00",
+} as const;
+
 async function main() {
-  // Limpia datos previos en desarrollo
   await prisma.appointment.deleteMany();
+  await prisma.barberAvailability.deleteMany();
   await prisma.barber.deleteMany();
   await prisma.service.deleteMany();
 
@@ -23,19 +31,53 @@ async function main() {
     }),
   ]);
 
-  const barbers = await Promise.all([
-    prisma.barber.create({
-      data: { name: "Marcos Llanos", specialty: "Cortes fade y textura" },
-    }),
-    prisma.barber.create({
-      data: { name: "Lucas Herrera", specialty: "Barba y afeitado clásico" },
-    }),
-    prisma.barber.create({
-      data: { name: "Mateo Ruiz", specialty: "Estilo contemporáneo" },
-    }),
-  ]);
+  const barberDefs = [
+    { name: "Marcos Llanos", specialty: "Cortes fade y textura" },
+    { name: "Lucas Herrera", specialty: "Barba y afeitado clásico" },
+    { name: "Mateo Ruiz", specialty: "Estilo contemporáneo" },
+  ];
 
-  console.log(`Seed OK: ${services.length} servicios, ${barbers.length} barberos`);
+  const barbers = [];
+  for (const def of barberDefs) {
+    const barber = await prisma.barber.create({ data: def });
+    barbers.push(barber);
+
+    // 1–6 = lunes–sábado
+    for (let dayOfWeek = 1; dayOfWeek <= 6; dayOfWeek++) {
+      await prisma.barberAvailability.create({
+        data: {
+          barberId: barber.id,
+          dayOfWeek,
+          ...WEEKDAY_SCHEDULE,
+        },
+      });
+    }
+  }
+
+  // Cita de ejemplo (bloquea un slot) para mañana si no es domingo
+  const tomorrow = new Date();
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  while (tomorrow.getUTCDay() === 0) {
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  }
+  tomorrow.setUTCHours(0, 0, 0, 0);
+
+  await prisma.appointment.create({
+    data: {
+      name: "Cliente ejemplo",
+      phone: "+34600000000",
+      email: "ejemplo@sigmabarber.test",
+      date: tomorrow,
+      time: "10:00",
+      status: "CONFIRMED",
+      barberId: barbers[0].id,
+      serviceId: services[0].id,
+    },
+  });
+
+  console.log(
+    `Seed OK: ${services.length} servicios, ${barbers.length} barberos, horarios lun–sáb + 1 cita ejemplo`
+  );
 }
 
 main()
