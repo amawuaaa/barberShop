@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { appointmentSchema } from "@/lib/validations/appointment";
 import { assertSlotAvailable } from "@/lib/availability";
-import {
-  sendEmailConfirmation,
-  sendWhatsAppConfirmation,
-} from "@/lib/notifications";
+import { dispatchAppointmentNotifications } from "@/lib/notifications";
 
 /**
  * POST /api/appointments
@@ -80,7 +77,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // Notificaciones (stubs hasta configurar Resend / Twilio)
+    // Notificaciones post-persistencia (Resend + Twilio).
+    // Si faltan API keys o fallan, la cita igual queda guardada.
     const notificationPayload = {
       appointmentId: appointment.id,
       customerName: appointment.name,
@@ -92,10 +90,9 @@ export async function POST(request: Request) {
       time: appointment.time,
     };
 
-    await Promise.allSettled([
-      sendEmailConfirmation(notificationPayload),
-      sendWhatsAppConfirmation(notificationPayload),
-    ]);
+    const notifications = await dispatchAppointmentNotifications(
+      notificationPayload
+    );
 
     return NextResponse.json(
       {
@@ -108,6 +105,7 @@ export async function POST(request: Request) {
           service: appointment.service.name,
           barber: appointment.barber.name,
         },
+        notifications,
       },
       { status: 201 }
     );

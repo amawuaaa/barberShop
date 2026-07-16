@@ -112,8 +112,8 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
             <span className="text-[var(--silver-light)]">
               {confirmation.status === "PENDING" ? "pendiente" : confirmation.status}
             </span>
-            . Te enviaremos confirmación por email y WhatsApp cuando las
-            integraciones estén activas.
+            . Si las notificaciones están configuradas, recibirás email y
+            WhatsApp con los detalles.
           </p>
         </div>
         <dl className="grid gap-2 border border-[var(--line)] bg-[var(--ink)] px-4 py-3 text-sm">

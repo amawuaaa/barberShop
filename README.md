@@ -38,9 +38,37 @@ npm run dev
 | `/api/availability` | Slots libres (oculta ocupados / pasados) |
 | `/api/appointments` | Crea cita + comprueba solapes |
 | `/admin` | Lista citas del día y cambia estado |
-| Notificaciones | Stubs Resend / Twilio en `src/lib/notifications.ts` |
+| Notificaciones | Resend (email) + Twilio WhatsApp en `src/lib/notifications.ts` |
+| `/admin` → Horarios | Editar disponibilidad semanal por barbero |
 
 Estados de cita: `PENDING` → `CONFIRMED` → `COMPLETED` / `CANCELLED`.
+
+## Notificaciones (paso 2)
+
+Sin API keys la reserva **sigue funcionando**; email/WhatsApp se omiten con log `skipped`.
+
+### Resend (email)
+1. Crea cuenta en [resend.com](https://resend.com) y una API key.
+2. Para pruebas: `RESEND_FROM_EMAIL="SIGMABARBER <onboarding@resend.dev>"` (solo envía a tu email de cuenta).
+3. En producción: verifica tu dominio y usa `citas@tudominio.com`.
+
+```env
+RESEND_API_KEY=re_xxx
+RESEND_FROM_EMAIL="SIGMABARBER <onboarding@resend.dev>"
+# NOTIFY_OWNER_EMAIL="dueno@tudominio.com"
+```
+
+### Twilio WhatsApp
+1. [Twilio Console](https://console.twilio.com) → Account SID + Auth Token.
+2. Activa WhatsApp Sandbox (`TWILIO_WHATSAPP_FROM=whatsapp:+14155238886`).
+3. El número del cliente debe unirse al sandbox (código que muestra Twilio).
+
+```env
+TWILIO_ACCOUNT_SID=ACxxx
+TWILIO_AUTH_TOKEN=xxx
+TWILIO_WHATSAPP_FROM="whatsapp:+14155238886"
+# NOTIFY_OWNER_WHATSAPP="+34600000000"
+```
 
 ## Staging / producción (Neon, Supabase, Railway)
 
