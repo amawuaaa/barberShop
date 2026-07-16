@@ -19,19 +19,42 @@ export default async function AdminPage() {
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const appointments = await prisma.appointment.findMany({
-    where: { date: new Date(`${today}T00:00:00.000Z`) },
-    orderBy: [{ time: "asc" }],
-    include: {
-      service: true,
-      barber: true,
-    },
-  });
+  const [appointments, barbers] = await Promise.all([
+    prisma.appointment.findMany({
+      where: { date: new Date(`${today}T00:00:00.000Z`) },
+      orderBy: [{ time: "asc" }],
+      include: {
+        service: true,
+        barber: true,
+      },
+    }),
+    prisma.barber.findMany({
+      where: { active: true },
+      orderBy: { name: "asc" },
+      include: {
+        availabilities: {
+          orderBy: { dayOfWeek: "asc" },
+        },
+      },
+    }),
+  ]);
 
   return (
     <main className="min-h-full flex-1 bg-[var(--ink)] text-[var(--silver)]">
       <AdminDashboard
         initialDate={today}
+        barbers={barbers.map((barber) => ({
+          id: barber.id,
+          name: barber.name,
+          specialty: barber.specialty,
+          availabilities: barber.availabilities.map((row) => ({
+            dayOfWeek: row.dayOfWeek,
+            startTime: row.startTime,
+            endTime: row.endTime,
+            breakStart: row.breakStart,
+            breakEnd: row.breakEnd,
+          })),
+        }))}
         appointments={appointments.map((appointment) => ({
           id: appointment.id,
           name: appointment.name,

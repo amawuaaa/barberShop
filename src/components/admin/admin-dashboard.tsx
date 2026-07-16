@@ -4,11 +4,12 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Loader2, LogOut } from "lucide-react";
+import { CalendarDays, Clock3, Loader2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { AppointmentStatus } from "@prisma/client";
+import { AdminScheduleEditor } from "@/components/admin/admin-schedule-editor";
 
 type AdminAppointment = {
   id: string;
@@ -20,6 +21,19 @@ type AdminAppointment = {
   status: AppointmentStatus;
   service: { name: string; duration: number; price: number };
   barber: { name: string };
+};
+
+type BarberWithSchedule = {
+  id: string;
+  name: string;
+  specialty: string;
+  availabilities: {
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    breakStart: string | null;
+    breakEnd: string | null;
+  }[];
 };
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -38,14 +52,19 @@ const STATUS_ACTIONS: AppointmentStatus[] = [
 
 type AdminDashboardProps = {
   appointments: AdminAppointment[];
+  barbers: BarberWithSchedule[];
   initialDate: string;
 };
 
+type AdminTab = "citas" | "horarios";
+
 export function AdminDashboard({
   appointments: initialAppointments,
+  barbers,
   initialDate,
 }: AdminDashboardProps) {
   const router = useRouter();
+  const [tab, setTab] = useState<AdminTab>("citas");
   const [dateFilter, setDateFilter] = useState(initialDate);
   const [appointments, setAppointments] = useState(initialAppointments);
   const [error, setError] = useState<string | null>(null);
@@ -129,124 +148,181 @@ export function AdminDashboard({
             SIGMABARBER
           </p>
           <h1 className="font-display text-3xl font-bold tracking-wide text-[var(--silver-light)]">
-            Citas
+            Panel
           </h1>
-          <p className="mt-1 capitalize text-[var(--steel)]">{titleDate}</p>
+          <p className="mt-1 text-[var(--steel)]">
+            {tab === "citas" ? (
+              <span className="capitalize">{titleDate}</span>
+            ) : (
+              "Horarios semanales por barbero"
+            )}
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <label htmlFor="date" className="text-xs text-[var(--steel)]">
-              Día
-            </label>
-            <Input
-              id="date"
-              type="date"
-              value={dateFilter}
-              onChange={(event) => setDateFilter(event.target.value)}
-              className="w-auto bg-[var(--mist)]"
-            />
-          </div>
-          <Button
-            type="button"
-            onClick={() => loadDay(dateFilter)}
-            disabled={isPending}
-            className="min-h-11 bg-[var(--silver-light)] text-[var(--ink)] hover:bg-[var(--silver)]"
-          >
-            {isPending && !updatingId ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              "Filtrar"
-            )}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={logout}
-            className="min-h-11 border-[var(--line)] text-[var(--silver)]"
-          >
-            <LogOut className="size-4" />
-            Salir
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={logout}
+          className="min-h-11 border-[var(--line)] text-[var(--silver)]"
+        >
+          <LogOut className="size-4" />
+          Salir
+        </Button>
       </header>
 
-      {error && (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      )}
+      <nav className="flex gap-2 border-b border-[var(--line)] pb-3">
+        <TabButton
+          active={tab === "citas"}
+          onClick={() => setTab("citas")}
+          icon={<CalendarDays className="size-4" />}
+          label="Citas"
+        />
+        <TabButton
+          active={tab === "horarios"}
+          onClick={() => setTab("horarios")}
+          icon={<Clock3 className="size-4" />}
+          label="Horarios"
+        />
+      </nav>
 
-      {appointments.length === 0 ? (
-        <p className="border border-[var(--line)] bg-[var(--mist)] px-4 py-8 text-center text-[var(--steel)]">
-          No hay citas para este día.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {appointments.map((appointment) => (
-            <li
-              key={appointment.id}
-              className="border border-[var(--line)] bg-[var(--mist)] px-4 py-4"
+      {tab === "citas" && (
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <label htmlFor="date" className="text-xs text-[var(--steel)]">
+                Día
+              </label>
+              <Input
+                id="date"
+                type="date"
+                value={dateFilter}
+                onChange={(event) => setDateFilter(event.target.value)}
+                className="w-auto bg-[var(--mist)]"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={() => loadDay(dateFilter)}
+              disabled={isPending}
+              className="min-h-11 bg-[var(--silver-light)] text-[var(--ink)] hover:bg-[var(--silver)]"
             >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-1">
-                  <p className="font-medium text-[var(--silver-light)]">
-                    {appointment.time} · {appointment.name}
-                  </p>
-                  <p className="text-sm text-[var(--silver)]">
-                    {appointment.service.name} con {appointment.barber.name}
-                  </p>
-                  <p className="text-xs text-[var(--steel)]">
-                    {appointment.phone} · {appointment.email}
-                  </p>
-                  <p
-                    className={cn(
-                      "inline-block pt-1 text-xs font-medium uppercase tracking-wide",
-                      appointment.status === "CONFIRMED" && "text-emerald-400",
-                      appointment.status === "PENDING" && "text-amber-300",
-                      appointment.status === "CANCELLED" && "text-red-400",
-                      appointment.status === "COMPLETED" && "text-[var(--silver)]"
-                    )}
-                  >
-                    {STATUS_LABEL[appointment.status]}
-                  </p>
-                </div>
+              {isPending && !updatingId ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                "Filtrar"
+              )}
+            </Button>
+          </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {STATUS_ACTIONS.map((status) => (
-                    <Button
-                      key={status}
-                      type="button"
-                      size="sm"
-                      variant={
-                        appointment.status === status ? "default" : "outline"
-                      }
-                      disabled={
-                        appointment.status === status ||
-                        updatingId === appointment.id
-                      }
-                      onClick={() => updateStatus(appointment.id, status)}
-                      className={cn(
-                        "text-xs",
-                        appointment.status === status
-                          ? "bg-[var(--silver-light)] text-[var(--ink)]"
-                          : "border-[var(--line)] text-[var(--silver)]"
-                      )}
-                    >
-                      {updatingId === appointment.id &&
-                      appointment.status !== status ? (
-                        <Loader2 className="size-3 animate-spin" />
-                      ) : (
-                        STATUS_LABEL[status]
-                      )}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+
+          {appointments.length === 0 ? (
+            <p className="border border-[var(--line)] bg-[var(--mist)] px-4 py-8 text-center text-[var(--steel)]">
+              No hay citas para este día.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {appointments.map((appointment) => (
+                <li
+                  key={appointment.id}
+                  className="border border-[var(--line)] bg-[var(--mist)] px-4 py-4"
+                >
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium text-[var(--silver-light)]">
+                        {appointment.time} · {appointment.name}
+                      </p>
+                      <p className="text-sm text-[var(--silver)]">
+                        {appointment.service.name} con {appointment.barber.name}
+                      </p>
+                      <p className="text-xs text-[var(--steel)]">
+                        {appointment.phone} · {appointment.email}
+                      </p>
+                      <p
+                        className={cn(
+                          "inline-block pt-1 text-xs font-medium uppercase tracking-wide",
+                          appointment.status === "CONFIRMED" && "text-emerald-400",
+                          appointment.status === "PENDING" && "text-amber-300",
+                          appointment.status === "CANCELLED" && "text-red-400",
+                          appointment.status === "COMPLETED" &&
+                            "text-[var(--silver)]"
+                        )}
+                      >
+                        {STATUS_LABEL[appointment.status]}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {STATUS_ACTIONS.map((status) => (
+                        <Button
+                          key={status}
+                          type="button"
+                          size="sm"
+                          variant={
+                            appointment.status === status ? "default" : "outline"
+                          }
+                          disabled={
+                            appointment.status === status ||
+                            updatingId === appointment.id
+                          }
+                          onClick={() => updateStatus(appointment.id, status)}
+                          className={cn(
+                            "text-xs",
+                            appointment.status === status
+                              ? "bg-[var(--silver-light)] text-[var(--ink)]"
+                              : "border-[var(--line)] text-[var(--silver)]"
+                          )}
+                        >
+                          {updatingId === appointment.id &&
+                          appointment.status !== status ? (
+                            <Loader2 className="size-3 animate-spin" />
+                          ) : (
+                            STATUS_LABEL[status]
+                          )}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
+
+      {tab === "horarios" && <AdminScheduleEditor barbers={barbers} />}
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex min-h-11 items-center gap-2 border-b-2 px-3 text-sm transition-colors",
+        active
+          ? "border-[var(--silver-light)] text-[var(--silver-light)]"
+          : "border-transparent text-[var(--steel)] hover:text-[var(--silver)]"
+      )}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
