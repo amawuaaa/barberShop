@@ -19,7 +19,7 @@ export default async function AdminPage() {
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const [appointments, barbers] = await Promise.all([
+  const [appointments, barbers, services, catalogBarbers] = await Promise.all([
     prisma.appointment.findMany({
       where: { date: new Date(`${today}T00:00:00.000Z`) },
       orderBy: [{ time: "asc" }],
@@ -36,6 +36,12 @@ export default async function AdminPage() {
           orderBy: { dayOfWeek: "asc" },
         },
       },
+    }),
+    prisma.service.findMany({
+      orderBy: [{ active: "desc" }, { name: "asc" }],
+    }),
+    prisma.barber.findMany({
+      orderBy: [{ active: "desc" }, { name: "asc" }],
     }),
   ]);
 
@@ -54,6 +60,19 @@ export default async function AdminPage() {
             breakStart: row.breakStart,
             breakEnd: row.breakEnd,
           })),
+        }))}
+        services={services.map((service) => ({
+          id: service.id,
+          name: service.name,
+          duration: service.duration,
+          price: service.price,
+          active: service.active,
+        }))}
+        catalogBarbers={catalogBarbers.map((barber) => ({
+          id: barber.id,
+          name: barber.name,
+          specialty: barber.specialty,
+          active: barber.active,
         }))}
         appointments={appointments.map((appointment) => ({
           id: appointment.id,

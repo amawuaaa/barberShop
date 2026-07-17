@@ -4,12 +4,17 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarDays, Clock3, Loader2, LogOut } from "lucide-react";
+import { CalendarDays, Clock3, Loader2, LogOut, Scissors } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { AppointmentStatus } from "@prisma/client";
 import { AdminScheduleEditor } from "@/components/admin/admin-schedule-editor";
+import {
+  AdminCatalogEditor,
+  type CatalogBarber,
+  type CatalogService,
+} from "@/components/admin/admin-catalog-editor";
 
 type AdminAppointment = {
   id: string;
@@ -53,14 +58,18 @@ const STATUS_ACTIONS: AppointmentStatus[] = [
 type AdminDashboardProps = {
   appointments: AdminAppointment[];
   barbers: BarberWithSchedule[];
+  services: CatalogService[];
+  catalogBarbers: CatalogBarber[];
   initialDate: string;
 };
 
-type AdminTab = "citas" | "horarios";
+type AdminTab = "citas" | "horarios" | "catalogo";
 
 export function AdminDashboard({
   appointments: initialAppointments,
   barbers,
+  services,
+  catalogBarbers,
   initialDate,
 }: AdminDashboardProps) {
   const router = useRouter();
@@ -151,11 +160,9 @@ export function AdminDashboard({
             Panel
           </h1>
           <p className="mt-1 text-[var(--steel)]">
-            {tab === "citas" ? (
-              <span className="capitalize">{titleDate}</span>
-            ) : (
-              "Horarios semanales por barbero"
-            )}
+            {tab === "citas" && <span className="capitalize">{titleDate}</span>}
+            {tab === "horarios" && "Horarios semanales por barbero"}
+            {tab === "catalogo" && "Servicios y barberos"}
           </p>
         </div>
 
@@ -182,6 +189,12 @@ export function AdminDashboard({
           onClick={() => setTab("horarios")}
           icon={<Clock3 className="size-4" />}
           label="Horarios"
+        />
+        <TabButton
+          active={tab === "catalogo"}
+          onClick={() => setTab("catalogo")}
+          icon={<Scissors className="size-4" />}
+          label="Catálogo"
         />
       </nav>
 
@@ -294,7 +307,16 @@ export function AdminDashboard({
         </div>
       )}
 
-      {tab === "horarios" && <AdminScheduleEditor barbers={barbers} />}
+      {tab === "horarios" && (
+        <AdminScheduleEditor
+          key={barbers.map((barber) => barber.id).join("-")}
+          barbers={barbers}
+        />
+      )}
+
+      {tab === "catalogo" && (
+        <AdminCatalogEditor services={services} barbers={catalogBarbers} />
+      )}
     </div>
   );
 }
