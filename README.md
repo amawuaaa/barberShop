@@ -36,8 +36,8 @@ npm run dev
 |--------|-------------|
 | `BarberAvailability` | Horario semanal por barbero (pausa incluida) |
 | `/api/availability` | Slots libres (oculta ocupados / pasados) |
-| `/api/appointments` | Crea cita + comprueba solapes |
-| `/admin` | Lista citas del día y cambia estado |
+| `/api/appointments` | Crea cita (lock anti doble-reserva + índice único de slot) |
+| `/admin` | Citas del día, horarios, catálogo (servicios/barberos) |
 | Notificaciones | Resend (email) + Twilio WhatsApp en `src/lib/notifications.ts` |
 | `/admin` → Horarios | Editar disponibilidad semanal por barbero |
 
@@ -70,20 +70,33 @@ TWILIO_WHATSAPP_FROM="whatsapp:+14155238886"
 # NOTIFY_OWNER_WHATSAPP="+34600000000"
 ```
 
-## Staging / producción (Neon, Supabase, Railway)
+## Staging / producción (Supabase)
 
-1. Crea un proyecto Postgres en Neon, Supabase o Railway.
-2. Copia la connection string a `DATABASE_URL` (con `?sslmode=require` si aplica).
-3. En el hosting (Vercel):
+Este proyecto usa **Prisma**, no el CLI de Supabase (`supabase db push` no aplica aquí).
+
+### Conexión (importante en Mac)
+
+La URL directa `db.xxx.supabase.co:5432` suele fallar con **P1001** (solo IPv6). En Supabase → **Connect → ORMs → Prisma** copia **ambas**:
+
+```env
+# App (transaction pooler, puerto 6543)
+DATABASE_URL="postgresql://postgres.TU_REF:PASSWORD@aws-1-REGION.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require"
+# Migraciones (session pooler, puerto 5432)
+DIRECT_URL="postgresql://postgres.TU_REF:PASSWORD@aws-1-REGION.pooler.supabase.com:5432/postgres?sslmode=require"
+```
+
+Prisma usa `DATABASE_URL` en runtime y `DIRECT_URL` para `migrate`.
+
+### Aplicar migraciones
 
 ```bash
 npx prisma migrate deploy
 npm run db:seed   # solo la primera vez
 ```
 
-4. Define también `ADMIN_PASSWORD` y `ADMIN_SECRET`.
+También define `ADMIN_PASSWORD` y `ADMIN_SECRET`.
 
-Local sigue usando Docker; staging usa la URL remota. Mismo schema Prisma.
+Local puede seguir con Docker; staging/prod con la URL del pooler. Mismo schema Prisma.
 
 ## Scripts útiles
 

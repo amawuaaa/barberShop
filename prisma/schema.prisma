@@ -6,8 +6,10 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Session pooler / direct — required for migrate on Supabase
+  directUrl = env("DIRECT_URL")
 }
 
 model Barber {
@@ -84,4 +86,6 @@ model Appointment {
   @@index([date, barberId])
   @@index([status])
   @@index([email])
+  // Índice único parcial (PENDING|CONFIRMED) en migración:
+  // Appointment_barber_date_time_active_key
 }

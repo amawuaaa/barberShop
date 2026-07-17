@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import type { AppointmentStatus } from "@prisma/client";
+import type { AppointmentStatus, Prisma } from "@prisma/client";
 
 const SLOT_INTERVAL_MINUTES = 30;
 
 /** Estados que ocupan el calendario (bloquean slots). */
 export const BLOCKING_STATUSES: AppointmentStatus[] = ["PENDING", "CONFIRMED"];
+
+type DbClient = Prisma.TransactionClient | typeof prisma;
 
 export function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);
@@ -79,12 +81,15 @@ function parseDateOnly(date: string): Date {
 /**
  * Slots libres para un barbero en una fecha, filtrando solapes con citas activas.
  */
-export async function getAvailableSlots(params: {
-  barberId: string;
-  date: string;
-  serviceId: string;
-}): Promise<{ slots: string[]; reason?: string }> {
-  const service = await prisma.service.findFirst({
+export async function getAvailableSlots(
+  params: {
+    barberId: string;
+    date: string;
+    serviceId: string;
+  },
+  db: DbClient = prisma
+): Promise<{ slots: string[]; reason?: string }> {
+  const service = await db.service.findFirst({
     where: { id: params.serviceId, active: true },
   });
 
@@ -95,7 +100,7 @@ export async function getAvailableSlots(params: {
   const day = parseDateOnly(params.date);
   const dayOfWeek = day.getUTCDay();
 
-  const availability = await prisma.barberAvailability.findUnique({
+  const availability = await db.barberAvailability.findUnique({
     where: {
       barberId_dayOfWeek: {
         barberId: params.barberId,
@@ -116,7 +121,7 @@ export async function getAvailableSlots(params: {
     serviceDurationMinutes: service.duration,
   });
 
-  const appointments = await prisma.appointment.findMany({
+  const appointments = await db.appointment.findMany({
     where: {
       barberId: params.barberId,
       date: day,
@@ -150,15 +155,18 @@ export async function getAvailableSlots(params: {
 }
 
 /**
- * Comprueba si un slot concreto sigue libre (race-condition al confirmar).
+ * Comprueba si un slot concreto sigue libre.
  */
-export async function assertSlotAvailable(params: {
-  barberId: string;
-  serviceId: string;
-  date: string;
-  time: string;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { slots, reason } = await getAvailableSlots(params);
+export async function assertSlotAvailable(
+  params: {
+    barberId: string;
+    serviceId: string;
+    date: string;
+    time: string;
+  },
+  db: DbClient = prisma
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { slots, reason } = await getAvailableSlots(params, db);
 
   if (!slots.includes(params.time)) {
     return {
@@ -168,4 +176,95 @@ export async function assertSlotAvailable(params: {
   }
 
   return { ok: true };
+}
+
+export type CreateAppointmentInput = {
+  serviceId: string;
+  barberId: string;
+  date: string;
+  time: string;
+  name: string;
+  phone: string;
+  email: string;
+  clientId?: string;
+};
+
+/**
+ * Crea una cita bajo lock por barbero+día para evitar doble reserva concurrente.
+ * Complementado con índice único parcial (barberId, date, time) en citas activas.
+ */
+export async function createAppointmentSafely(input: CreateAppointmentInput) {
+  return prisma.$transaction(async (tx) => {
+    const [service, barber] = await Promise.all([
+      tx.service.findFirst({
+        where: { id: input.serviceId, active: true },
+      }),
+      tx.barber.findFirst({
+        where: { id: input.barberId, active: true },
+      }),
+    ]);
+
+    if (!service) {
+      return {
+        ok: false as const,
+        status: 404 as const,
+        error: "Servicio no encontrado",
+      };
+    }
+
+    if (!barber) {
+      return {
+        ok: false as const,
+        status: 404 as const,
+        error: "Barbero no encontrado",
+      };
+    }
+
+    // Serializa reservas del mismo barbero el mismo día (cubre solapes por duración).
+    // Ambos args deben ser int4: pg_advisory_xact_lock(int, int) — no (int, bigint).
+    await tx.$executeRaw`
+      SELECT pg_advisory_xact_lock(
+        hashtext(${input.barberId}),
+        hashtext(${input.date})
+      )
+    `;
+
+    const availability = await assertSlotAvailable(
+      {
+        barberId: input.barberId,
+        serviceId: input.serviceId,
+        date: input.date,
+        time: input.time,
+      },
+      tx
+    );
+
+    if (!availability.ok) {
+      return {
+        ok: false as const,
+        status: 409 as const,
+        error: availability.error,
+      };
+    }
+
+    const appointment = await tx.appointment.create({
+      data: {
+        clientId: input.clientId,
+        name: input.name,
+        phone: input.phone,
+        email: input.email,
+        date: parseDateOnly(input.date),
+        time: input.time,
+        status: "PENDING",
+        barberId: input.barberId,
+        serviceId: input.serviceId,
+      },
+      include: {
+        service: true,
+        barber: true,
+      },
+    });
+
+    return { ok: true as const, appointment };
+  });
 }
