@@ -293,3 +293,37 @@ export async function dispatchStatusChangeNotifications(
   ]);
   return results;
 }
+
+function buildReminderMessageBody(payload: NotificationPayload): string {
+  return [
+    `Hola ${payload.customerName},`,
+    `Recordatorio: mañana (o en ~24h) tienes cita en SIGMABARBER.`,
+    `${payload.serviceName} con ${payload.barberName}`,
+    `${payload.date} a las ${payload.time}.`,
+    `Ref: ${payload.appointmentId}`,
+    manageFooter(payload.appointmentId).trim(),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/** Recordatorio ~24h antes de la cita. */
+export async function dispatchReminderNotifications(
+  payload: NotificationPayload
+): Promise<NotificationResult[]> {
+  const text = buildReminderMessageBody(payload);
+  const html = buildEmailHtml(payload, {
+    title: "Recordatorio de cita",
+    statusLine:
+      "Te recordamos tu reserva en <strong>SIGMABARBER</strong>:",
+  });
+
+  return Promise.all([
+    sendEmail(payload, {
+      subject: `Recordatorio — ${payload.date} ${payload.time}`,
+      text,
+      html,
+    }),
+    sendWhatsApp(payload, text, "Recordatorio cita — SIGMABARBER"),
+  ]);
+}

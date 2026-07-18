@@ -41,10 +41,23 @@ npm run dev
 | Notificaciones | Resend (email) + Twilio WhatsApp en `src/lib/notifications.ts` |
 | `/admin` → Horarios | Semanal + días libres / excepciones por barbero |
 | `/cita/[id]?t=` | Cliente cancela o reprograma (enlace en email/WhatsApp) |
+| `/api/cron/reminders` | Recordatorio ~24h (Vercel Cron cada hora) |
 
 Estados de cita: `PENDING` → `CONFIRMED` → `COMPLETED` / `CANCELLED`.
 
 Define `APP_URL` en producción para que los enlaces de gestión apunten bien.
+
+### Recordatorios 24h
+
+En Vercel, el cron de `vercel.json` llama a `/api/cron/reminders` cada hora. Configura `CRON_SECRET` (Vercel lo inyecta en el header `Authorization`) y opcionalmente `APP_TIMEZONE` (por defecto `Europe/Madrid`).
+
+Prueba local:
+
+```bash
+curl -X POST http://localhost:3000/api/cron/reminders
+# o con secret:
+# curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/reminders
+```
 
 ## Notificaciones (paso 2)
 

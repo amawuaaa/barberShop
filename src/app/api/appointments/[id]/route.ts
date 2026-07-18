@@ -167,6 +167,7 @@ export async function PATCH(request: Request, context: RouteContext) {
             date: new Date(`${date}T00:00:00.000Z`),
             time,
             status: "PENDING",
+            reminderSentAt: null,
           },
           include: { service: true, barber: true },
         });

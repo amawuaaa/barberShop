@@ -103,7 +103,10 @@ export default async function AdminPage() {
             duration: appointment.service.duration,
             price: appointment.service.price,
           },
-          barber: { name: appointment.barber.name },
+          barber: {
+            id: appointment.barber.id,
+            name: appointment.barber.name,
+          },
         }))}
       />
     </main>
