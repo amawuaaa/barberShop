@@ -50,7 +50,7 @@ Define `APP_URL` en producción para que los enlaces de gestión apunten bien.
 
 ### Recordatorios 24h
 
-En Vercel (plan Hobby), el cron de `vercel.json` llama a `/api/cron/reminders` **una vez al día** a las 08:00 UTC. Configura `CRON_SECRET` y opcionalmente `APP_TIMEZONE` (por defecto `Europe/Madrid`). En Pro podrías subirlo a cada hora.
+En Vercel (plan Hobby), el cron de `vercel.json` llama a `/api/cron/reminders` **una vez al día** a las 08:00 UTC y recuerda las citas de **mañana** (zona `APP_TIMEZONE`, por defecto `Europe/Madrid`). Configura `CRON_SECRET`.
 
 Prueba local:
 

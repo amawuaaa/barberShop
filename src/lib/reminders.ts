@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { BLOCKING_STATUSES } from "@/lib/availability";
 import { dispatchReminderNotifications } from "@/lib/notifications";
 import {
+  addCalendarDays,
   formatDateInTimeZone,
   getAppTimeZone,
-  zonedDateTimeToUtc,
 } from "@/lib/timezone";
 
 export type ReminderRunResult = {
@@ -14,40 +14,32 @@ export type ReminderRunResult = {
   failed: number;
   skipped: number;
   appointmentIds: string[];
+  targetDate: string;
 };
 
 /**
- * Envía recordatorios a citas activas que están a ~24h (ventana 22–26h).
- * Idempotente vía `reminderSentAt`.
+ * Recordatorios para las citas de **mañana** (zona de la barbería).
+ * Pensado para cron diario (Hobby: 1×/día). Idempotente vía `reminderSentAt`.
  */
 export async function sendDueReminders(
   now: Date = new Date()
 ): Promise<ReminderRunResult> {
   const timeZone = getAppTimeZone();
-  const windowStart = new Date(now.getTime() + 22 * 60 * 60 * 1000);
-  const windowEnd = new Date(now.getTime() + 26 * 60 * 60 * 1000);
-
-  // Candidatos: citas activas sin recordatorio en los próximos ~2 días
-  const fromDate = formatDateInTimeZone(now, timeZone);
-  const toDate = formatDateInTimeZone(
-    new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
-    timeZone
-  );
+  const today = formatDateInTimeZone(now, timeZone);
+  const tomorrow = addCalendarDays(today, 1);
+  const targetDay = new Date(`${tomorrow}T00:00:00.000Z`);
 
   const candidates = await prisma.appointment.findMany({
     where: {
       status: { in: BLOCKING_STATUSES },
       reminderSentAt: null,
-      date: {
-        gte: new Date(`${fromDate}T00:00:00.000Z`),
-        lte: new Date(`${toDate}T00:00:00.000Z`),
-      },
+      date: targetDay,
     },
     include: {
       service: true,
       barber: true,
     },
-    orderBy: [{ date: "asc" }, { time: "asc" }],
+    orderBy: [{ time: "asc" }],
   });
 
   const result: ReminderRunResult = {
@@ -56,18 +48,12 @@ export async function sendDueReminders(
     failed: 0,
     skipped: 0,
     appointmentIds: [],
+    targetDate: tomorrow,
   };
 
   for (const appointment of candidates) {
     const dateStr = format(appointment.date, "yyyy-MM-dd");
-    const startsAt = zonedDateTimeToUtc(dateStr, appointment.time, timeZone);
 
-    if (startsAt < windowStart || startsAt > windowEnd) {
-      result.skipped += 1;
-      continue;
-    }
-
-    // Marca primero para evitar doble envío si el cron se solapa
     const claimed = await prisma.appointment.updateMany({
       where: {
         id: appointment.id,
@@ -97,7 +83,6 @@ export async function sendDueReminders(
     const allFailed = notifications.every((item) => item.status === "failed");
 
     if (allFailed) {
-      // Permite reintentar en el siguiente cron
       await prisma.appointment.update({
         where: { id: appointment.id },
         data: { reminderSentAt: null },
@@ -106,7 +91,6 @@ export async function sendDueReminders(
       continue;
     }
 
-    // Si todo fue skipped (sin keys), dejamos marcado para no spamear logs cada hora
     if (!anySent) {
       result.skipped += 1;
       result.appointmentIds.push(appointment.id);

@@ -4,6 +4,7 @@ import { appointmentSchema } from "@/lib/validations/appointment";
 import { createAppointmentSafely } from "@/lib/availability";
 import { dispatchAppointmentNotifications } from "@/lib/notifications";
 import { checkRateLimit, clientIpFromRequest } from "@/lib/rate-limit";
+import { buildAppointmentManageUrl } from "@/lib/appointment-token";
 
 /**
  * POST /api/appointments
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
           time: appointment.time,
           service: appointment.service.name,
           barber: appointment.barber.name,
+          manageUrl: buildAppointmentManageUrl(appointment.id),
         },
         notifications,
       },

@@ -297,7 +297,7 @@ export async function dispatchStatusChangeNotifications(
 function buildReminderMessageBody(payload: NotificationPayload): string {
   return [
     `Hola ${payload.customerName},`,
-    `Recordatorio: mañana (o en ~24h) tienes cita en SIGMABARBER.`,
+    `Recordatorio: mañana tienes cita en SIGMABARBER.`,
     `${payload.serviceName} con ${payload.barberName}`,
     `${payload.date} a las ${payload.time}.`,
     `Ref: ${payload.appointmentId}`,

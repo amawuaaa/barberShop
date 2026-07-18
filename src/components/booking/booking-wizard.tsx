@@ -32,6 +32,7 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
     date: string;
     time: string;
     status: string;
+    manageUrl?: string | null;
   } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -112,8 +113,7 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
             <span className="text-[var(--silver-light)]">
               {confirmation.status === "PENDING" ? "pendiente" : confirmation.status}
             </span>
-            . Si las notificaciones están configuradas, recibirás email y
-            WhatsApp con los detalles.
+            . Te enviaremos los detalles por email y WhatsApp.
           </p>
         </div>
         <dl className="grid gap-2 border border-[var(--line)] bg-[var(--ink)] px-4 py-3 text-sm">
@@ -142,24 +142,35 @@ export function BookingWizard({ services, barbers }: BookingWizardProps) {
             </dd>
           </div>
         </dl>
-        <Button
-          type="button"
-          variant="outline"
-          className="border-[var(--silver)] text-[var(--silver-light)] hover:bg-[var(--silver-light)] hover:text-[var(--ink)]"
-          onClick={() => {
-            setConfirmation(null);
-            setStep(1);
-            setValue("serviceId", "");
-            setValue("barberId", "");
-            setValue("date", "");
-            setValue("time", "");
-            setValue("name", "");
-            setValue("email", "");
-            setValue("phone", "");
-          }}
-        >
-          Reservar otra cita
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          {confirmation.manageUrl ? (
+            <Button
+              type="button"
+              asChild
+              className="bg-[var(--silver-light)] text-[var(--ink)] hover:bg-[var(--silver)]"
+            >
+              <a href={confirmation.manageUrl}>Cancelar o reprogramar</a>
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            className="border-[var(--silver)] text-[var(--silver-light)] hover:bg-[var(--silver-light)] hover:text-[var(--ink)]"
+            onClick={() => {
+              setConfirmation(null);
+              setStep(1);
+              setValue("serviceId", "");
+              setValue("barberId", "");
+              setValue("date", "");
+              setValue("time", "");
+              setValue("name", "");
+              setValue("email", "");
+              setValue("phone", "");
+            }}
+          >
+            Reservar otra cita
+          </Button>
+        </div>
       </div>
     );
   }

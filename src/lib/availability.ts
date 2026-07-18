@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import type { AppointmentStatus, Prisma } from "@prisma/client";
+import {
+  formatDateInTimeZone,
+  nowMinutesInTimeZone,
+} from "@/lib/timezone";
 
 const SLOT_INTERVAL_MINUTES = 30;
 
@@ -183,10 +187,8 @@ export async function getAvailableSlots(
 
   const busy = buildBusyBlocks(appointments);
   const now = new Date();
-  const isToday =
-    params.date ===
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const isToday = params.date === formatDateInTimeZone(now);
+  const nowMinutes = nowMinutesInTimeZone(now);
 
   const slots = candidates.filter((slot) => {
     const start = timeToMinutes(slot);
