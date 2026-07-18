@@ -6,6 +6,7 @@ import { verifyAppointmentToken } from "@/lib/appointment-token";
 import { assertSlotAvailable } from "@/lib/availability";
 import { manageAppointmentSchema } from "@/lib/validations/manage-appointment";
 import { dispatchStatusChangeNotifications } from "@/lib/notifications";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rate-limit";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -81,6 +82,23 @@ export async function GET(request: Request, context: RouteContext) {
  * Cancelar o reprogramar con token del cliente.
  */
 export async function PATCH(request: Request, context: RouteContext) {
+  const ip = clientIpFromRequest(request);
+  const limited = checkRateLimit({
+    key: `appointments:manage:${ip}`,
+    limit: 20,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Demasiados intentos. Espera un momento e inténtalo de nuevo." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSec) },
+      }
+    );
+  }
+
   try {
     const { id } = await context.params;
     const body = await request.json();

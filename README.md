@@ -42,6 +42,7 @@ npm run dev
 | `/admin` → Horarios | Semanal + días libres / excepciones por barbero |
 | `/cita/[id]?t=` | Cliente cancela o reprograma (enlace en email/WhatsApp) |
 | `/api/cron/reminders` | Recordatorio ~24h (Vercel Cron 1×/día; Hobby) |
+| `/para-barberias` | Oferta piloto para vender a otras barberías |
 
 Estados de cita: `PENDING` → `CONFIRMED` → `COMPLETED` / `CANCELLED`.
 

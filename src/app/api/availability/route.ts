@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAvailableSlots } from "@/lib/availability";
 import { verifyAppointmentToken } from "@/lib/appointment-token";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rate-limit";
 
 const querySchema = z.object({
   barberId: z.string().min(1),
@@ -16,6 +17,23 @@ const querySchema = z.object({
  * Opcional: ignore=&t= para reprogramar (libera el slot de esa cita).
  */
 export async function GET(request: Request) {
+  const ip = clientIpFromRequest(request);
+  const limited = checkRateLimit({
+    key: `availability:${ip}`,
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Demasiadas consultas. Espera un momento." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSec) },
+      }
+    );
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const parsed = querySchema.safeParse({

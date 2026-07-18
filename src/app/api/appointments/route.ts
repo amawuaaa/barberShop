@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { appointmentSchema } from "@/lib/validations/appointment";
 import { createAppointmentSafely } from "@/lib/availability";
 import { dispatchAppointmentNotifications } from "@/lib/notifications";
+import { checkRateLimit, clientIpFromRequest } from "@/lib/rate-limit";
 
 /**
  * POST /api/appointments
@@ -10,6 +11,23 @@ import { dispatchAppointmentNotifications } from "@/lib/notifications";
  * El listado del dueño vive en /api/admin/appointments (autenticado).
  */
 export async function POST(request: Request) {
+  const ip = clientIpFromRequest(request);
+  const limited = checkRateLimit({
+    key: `appointments:create:${ip}`,
+    limit: 8,
+    windowMs: 15 * 60 * 1000,
+  });
+
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Demasiados intentos. Espera un momento e inténtalo de nuevo." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSec) },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
     const parsed = appointmentSchema.safeParse(body);

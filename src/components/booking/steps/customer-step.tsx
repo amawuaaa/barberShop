@@ -33,7 +33,7 @@ export function CustomerStep({
           Tus datos
         </h3>
         <p className="max-w-md text-sm leading-relaxed text-[var(--silver)] sm:text-base">
-          Último paso. Completa tus datos para ver la confirmación de la demo.
+          Último paso. Te enviaremos la confirmación por email y WhatsApp.
         </p>
       </header>
 

@@ -54,6 +54,13 @@ export default async function HomePage() {
             <a href="/admin" className="underline-offset-2 hover:underline">
               Panel
             </a>
+            {" · "}
+            <a
+              href="/para-barberias"
+              className="underline-offset-2 hover:underline"
+            >
+              Para barberías
+            </a>
           </p>
         </div>
       </footer>
