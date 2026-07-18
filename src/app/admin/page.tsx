@@ -18,10 +18,11 @@ export default async function AdminPage() {
   }
 
   const today = format(new Date(), "yyyy-MM-dd");
+  const todayDate = new Date(`${today}T00:00:00.000Z`);
 
-  const [appointments, barbers, services, catalogBarbers] = await Promise.all([
+  const [appointments, allBarbers, services] = await Promise.all([
     prisma.appointment.findMany({
-      where: { date: new Date(`${today}T00:00:00.000Z`) },
+      where: { date: todayDate },
       orderBy: [{ time: "asc" }],
       include: {
         service: true,
@@ -29,15 +30,14 @@ export default async function AdminPage() {
       },
     }),
     prisma.barber.findMany({
-      where: { active: true },
-      orderBy: { name: "asc" },
+      orderBy: [{ active: "desc" }, { name: "asc" }],
       include: {
         availabilities: {
           orderBy: { dayOfWeek: "asc" },
         },
         exceptions: {
           where: {
-            date: { gte: new Date(`${today}T00:00:00.000Z`) },
+            date: { gte: todayDate },
           },
           orderBy: { date: "asc" },
         },
@@ -46,16 +46,15 @@ export default async function AdminPage() {
     prisma.service.findMany({
       orderBy: [{ active: "desc" }, { name: "asc" }],
     }),
-    prisma.barber.findMany({
-      orderBy: [{ active: "desc" }, { name: "asc" }],
-    }),
   ]);
+
+  const scheduleBarbers = allBarbers.filter((barber) => barber.active);
 
   return (
     <main className="min-h-full flex-1 bg-[var(--ink)] text-[var(--silver)]">
       <AdminDashboard
         initialDate={today}
-        barbers={barbers.map((barber) => ({
+        barbers={scheduleBarbers.map((barber) => ({
           id: barber.id,
           name: barber.name,
           specialty: barber.specialty,
@@ -84,7 +83,7 @@ export default async function AdminPage() {
           price: service.price,
           active: service.active,
         }))}
-        catalogBarbers={catalogBarbers.map((barber) => ({
+        catalogBarbers={allBarbers.map((barber) => ({
           id: barber.id,
           name: barber.name,
           specialty: barber.specialty,

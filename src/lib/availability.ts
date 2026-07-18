@@ -12,6 +12,11 @@ export const BLOCKING_STATUSES: AppointmentStatus[] = ["PENDING", "CONFIRMED"];
 
 type DbClient = Prisma.TransactionClient | typeof prisma;
 
+type ServiceRef = {
+  id: string;
+  duration: number;
+};
+
 export function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
@@ -47,7 +52,6 @@ export function generateCandidateSlots(params: {
   for (let t = start; t + duration <= end; t += SLOT_INTERVAL_MINUTES) {
     const slotEnd = t + duration;
 
-    // Solapa con pausa
     if (
       breakStart !== null &&
       breakEnd !== null &&
@@ -85,6 +89,7 @@ function parseDateOnly(date: string): Date {
 /**
  * Slots libres para un barbero en una fecha, filtrando solapes con citas activas.
  * `ignoreAppointmentId` permite reprogramar sin que la propia cita bloquee el slot.
+ * `service` evita una query extra cuando ya se cargó el servicio.
  */
 export async function getAvailableSlots(
   params: {
@@ -92,28 +97,33 @@ export async function getAvailableSlots(
     date: string;
     serviceId: string;
     ignoreAppointmentId?: string;
+    service?: ServiceRef;
   },
   db: DbClient = prisma
 ): Promise<{ slots: string[]; reason?: string }> {
-  const service = await db.service.findFirst({
-    where: { id: params.serviceId, active: true },
-  });
+  const day = parseDateOnly(params.date);
+  const dayOfWeek = day.getUTCDay();
+
+  const [service, exception] = await Promise.all([
+    params.service
+      ? Promise.resolve(params.service)
+      : db.service.findFirst({
+          where: { id: params.serviceId, active: true },
+          select: { id: true, duration: true },
+        }),
+    db.barberException.findUnique({
+      where: {
+        barberId_date: {
+          barberId: params.barberId,
+          date: day,
+        },
+      },
+    }),
+  ]);
 
   if (!service) {
     return { slots: [], reason: "Servicio no encontrado" };
   }
-
-  const day = parseDateOnly(params.date);
-  const dayOfWeek = day.getUTCDay();
-
-  const exception = await db.barberException.findUnique({
-    where: {
-      barberId_date: {
-        barberId: params.barberId,
-        date: day,
-      },
-    },
-  });
 
   if (exception?.isClosed) {
     return {
@@ -131,7 +141,12 @@ export async function getAvailableSlots(
     breakEnd: string | null;
   } | null = null;
 
-  if (exception && !exception.isClosed && exception.startTime && exception.endTime) {
+  if (
+    exception &&
+    !exception.isClosed &&
+    exception.startTime &&
+    exception.endTime
+  ) {
     schedule = {
       startTime: exception.startTime,
       endTime: exception.endTime,
@@ -214,6 +229,7 @@ export async function assertSlotAvailable(
     date: string;
     time: string;
     ignoreAppointmentId?: string;
+    service?: ServiceRef;
   },
   db: DbClient = prisma
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -252,6 +268,7 @@ export async function createAppointmentSafely(input: CreateAppointmentInput) {
       }),
       tx.barber.findFirst({
         where: { id: input.barberId, active: true },
+        select: { id: true },
       }),
     ]);
 
@@ -271,8 +288,6 @@ export async function createAppointmentSafely(input: CreateAppointmentInput) {
       };
     }
 
-    // Serializa reservas del mismo barbero el mismo día (cubre solapes por duración).
-    // Ambos args deben ser int4: pg_advisory_xact_lock(int, int) — no (int, bigint).
     await tx.$executeRaw`
       SELECT pg_advisory_xact_lock(
         hashtext(${input.barberId}),
@@ -286,6 +301,7 @@ export async function createAppointmentSafely(input: CreateAppointmentInput) {
         serviceId: input.serviceId,
         date: input.date,
         time: input.time,
+        service: { id: service.id, duration: service.duration },
       },
       tx
     );
