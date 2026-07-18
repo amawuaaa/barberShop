@@ -80,12 +80,14 @@ function parseDateOnly(date: string): Date {
 
 /**
  * Slots libres para un barbero en una fecha, filtrando solapes con citas activas.
+ * `ignoreAppointmentId` permite reprogramar sin que la propia cita bloquee el slot.
  */
 export async function getAvailableSlots(
   params: {
     barberId: string;
     date: string;
     serviceId: string;
+    ignoreAppointmentId?: string;
   },
   db: DbClient = prisma
 ): Promise<{ slots: string[]; reason?: string }> {
@@ -100,24 +102,67 @@ export async function getAvailableSlots(
   const day = parseDateOnly(params.date);
   const dayOfWeek = day.getUTCDay();
 
-  const availability = await db.barberAvailability.findUnique({
+  const exception = await db.barberException.findUnique({
     where: {
-      barberId_dayOfWeek: {
+      barberId_date: {
         barberId: params.barberId,
-        dayOfWeek,
+        date: day,
       },
     },
   });
 
-  if (!availability) {
+  if (exception?.isClosed) {
+    return {
+      slots: [],
+      reason: exception.note
+        ? `No disponible: ${exception.note}`
+        : "El barbero no trabaja este día",
+    };
+  }
+
+  let schedule: {
+    startTime: string;
+    endTime: string;
+    breakStart: string | null;
+    breakEnd: string | null;
+  } | null = null;
+
+  if (exception && !exception.isClosed && exception.startTime && exception.endTime) {
+    schedule = {
+      startTime: exception.startTime,
+      endTime: exception.endTime,
+      breakStart: exception.breakStart,
+      breakEnd: exception.breakEnd,
+    };
+  } else {
+    const availability = await db.barberAvailability.findUnique({
+      where: {
+        barberId_dayOfWeek: {
+          barberId: params.barberId,
+          dayOfWeek,
+        },
+      },
+    });
+
+    if (availability) {
+      schedule = {
+        startTime: availability.startTime,
+        endTime: availability.endTime,
+        breakStart: availability.breakStart,
+        breakEnd: availability.breakEnd,
+      };
+    }
+  }
+
+  if (!schedule) {
     return { slots: [], reason: "El barbero no trabaja este día" };
   }
 
   const candidates = generateCandidateSlots({
-    startTime: availability.startTime,
-    endTime: availability.endTime,
-    breakStart: availability.breakStart,
-    breakEnd: availability.breakEnd,
+    startTime: schedule.startTime,
+    endTime: schedule.endTime,
+    breakStart: schedule.breakStart,
+    breakEnd: schedule.breakEnd,
     serviceDurationMinutes: service.duration,
   });
 
@@ -126,6 +171,9 @@ export async function getAvailableSlots(
       barberId: params.barberId,
       date: day,
       status: { in: BLOCKING_STATUSES },
+      ...(params.ignoreAppointmentId
+        ? { NOT: { id: params.ignoreAppointmentId } }
+        : {}),
     },
     select: {
       time: true,
@@ -163,6 +211,7 @@ export async function assertSlotAvailable(
     serviceId: string;
     date: string;
     time: string;
+    ignoreAppointmentId?: string;
   },
   db: DbClient = prisma
 ): Promise<{ ok: true } | { ok: false; error: string }> {

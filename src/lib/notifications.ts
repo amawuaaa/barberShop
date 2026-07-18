@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import twilio from "twilio";
+import { buildAppointmentManageUrl } from "@/lib/appointment-token";
 
 export type NotificationPayload = {
   appointmentId: string;
@@ -10,6 +11,10 @@ export type NotificationPayload = {
   barberName: string;
   date: string;
   time: string;
+};
+
+export type StatusNotificationPayload = NotificationPayload & {
+  status: "CONFIRMED" | "CANCELLED" | "RESCHEDULED" | "COMPLETED";
 };
 
 export type NotificationResult = {
@@ -27,6 +32,27 @@ function formatPhoneForWhatsApp(phone: string): string {
   return `whatsapp:${withPlus}`;
 }
 
+function manageFooter(appointmentId: string): string {
+  const url = buildAppointmentManageUrl(appointmentId);
+  if (!url) return "";
+  return `\nGestiona tu cita: ${url}`;
+}
+
+function statusLabel(
+  status: StatusNotificationPayload["status"]
+): string {
+  switch (status) {
+    case "CONFIRMED":
+      return "confirmada";
+    case "CANCELLED":
+      return "cancelada";
+    case "RESCHEDULED":
+      return "reprogramada";
+    case "COMPLETED":
+      return "completada";
+  }
+}
+
 function buildMessageBody(payload: NotificationPayload): string {
   return [
     `Hola ${payload.customerName},`,
@@ -35,15 +61,44 @@ function buildMessageBody(payload: NotificationPayload): string {
     `${payload.date} a las ${payload.time}.`,
     `Ref: ${payload.appointmentId}`,
     `Estado: pendiente de confirmación.`,
-  ].join("\n");
+    manageFooter(payload.appointmentId).trim(),
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
-function buildEmailHtml(payload: NotificationPayload): string {
+function buildStatusMessageBody(payload: StatusNotificationPayload): string {
+  const label = statusLabel(payload.status);
+  const lines = [
+    `Hola ${payload.customerName},`,
+    `Tu cita en SIGMABARBER está ${label}:`,
+    `${payload.serviceName} con ${payload.barberName}`,
+    `${payload.date} a las ${payload.time}.`,
+    `Ref: ${payload.appointmentId}`,
+  ];
+
+  if (payload.status !== "CANCELLED" && payload.status !== "COMPLETED") {
+    const footer = manageFooter(payload.appointmentId).trim();
+    if (footer) lines.push(footer);
+  }
+
+  return lines.join("\n");
+}
+
+function buildEmailHtml(
+  payload: NotificationPayload,
+  options?: { title?: string; statusLine?: string }
+): string {
+  const manageUrl = buildAppointmentManageUrl(payload.appointmentId);
+  const manageBlock = manageUrl
+    ? `<p style="margin-top: 20px;"><a href="${manageUrl}" style="color: #141414;">Cancelar o reprogramar</a></p>`
+    : "";
+
   return `
     <div style="font-family: Arial, sans-serif; color: #141414; line-height: 1.5;">
-      <h1 style="font-size: 22px; margin-bottom: 8px;">Cita registrada</h1>
+      <h1 style="font-size: 22px; margin-bottom: 8px;">${options?.title ?? "Cita registrada"}</h1>
       <p>Hola <strong>${payload.customerName}</strong>,</p>
-      <p>Tu reserva en <strong>SIGMABARBER</strong> quedó guardada:</p>
+      <p>${options?.statusLine ?? "Tu reserva en <strong>SIGMABARBER</strong> quedó guardada:"}</p>
       <ul>
         <li><strong>Servicio:</strong> ${payload.serviceName}</li>
         <li><strong>Barbero:</strong> ${payload.barberName}</li>
@@ -51,18 +106,14 @@ function buildEmailHtml(payload: NotificationPayload): string {
         <li><strong>Hora:</strong> ${payload.time}</li>
         <li><strong>Referencia:</strong> ${payload.appointmentId}</li>
       </ul>
-      <p style="color: #555;">Estado actual: pendiente. Te avisaremos si hay cambios.</p>
+      ${manageBlock}
     </div>
   `;
 }
 
-/**
- * Email vía Resend.
- * Vars: RESEND_API_KEY, RESEND_FROM_EMAIL
- * Opcional: NOTIFY_OWNER_EMAIL (copia al dueño)
- */
-export async function sendEmailConfirmation(
-  payload: NotificationPayload
+async function sendEmail(
+  payload: NotificationPayload,
+  options: { subject: string; text: string; html: string }
 ): Promise<NotificationResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM_EMAIL;
@@ -88,9 +139,9 @@ export async function sendEmailConfirmation(
     const { error } = await resend.emails.send({
       from,
       to,
-      subject: `Confirmación de cita — ${payload.date} ${payload.time}`,
-      html: buildEmailHtml(payload),
-      text: buildMessageBody(payload),
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
     });
 
     if (error) {
@@ -116,15 +167,10 @@ export async function sendEmailConfirmation(
   }
 }
 
-/**
- * WhatsApp vía Twilio.
- * Vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM
- * Opcional: NOTIFY_OWNER_WHATSAPP
- *
- * Sandbox Twilio: el cliente debe unirse al sandbox antes de recibir mensajes.
- */
-export async function sendWhatsAppConfirmation(
-  payload: NotificationPayload
+async function sendWhatsApp(
+  payload: NotificationPayload,
+  body: string,
+  ownerPrefix = "Nueva cita SIGMABARBER"
 ): Promise<NotificationResult> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -144,7 +190,6 @@ export async function sendWhatsAppConfirmation(
 
   try {
     const client = twilio(accountSid, authToken);
-    const body = buildMessageBody(payload);
     const to = formatPhoneForWhatsApp(payload.customerPhone);
 
     await client.messages.create({ from, to, body });
@@ -155,7 +200,7 @@ export async function sendWhatsAppConfirmation(
         from,
         to: formatPhoneForWhatsApp(ownerWhatsApp),
         body: [
-          `Nueva cita SIGMABARBER`,
+          ownerPrefix,
           `${payload.customerName} — ${payload.customerPhone}`,
           `${payload.serviceName} con ${payload.barberName}`,
           `${payload.date} ${payload.time}`,
@@ -178,6 +223,35 @@ export async function sendWhatsAppConfirmation(
   }
 }
 
+/**
+ * Email vía Resend.
+ * Vars: RESEND_API_KEY, RESEND_FROM_EMAIL
+ * Opcional: NOTIFY_OWNER_EMAIL (copia al dueño)
+ */
+export async function sendEmailConfirmation(
+  payload: NotificationPayload
+): Promise<NotificationResult> {
+  return sendEmail(payload, {
+    subject: `Confirmación de cita — ${payload.date} ${payload.time}`,
+    text: buildMessageBody(payload),
+    html: buildEmailHtml(payload, {
+      statusLine:
+        "Tu reserva en <strong>SIGMABARBER</strong> quedó guardada:",
+    }),
+  });
+}
+
+/**
+ * WhatsApp vía Twilio.
+ * Vars: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM
+ * Opcional: NOTIFY_OWNER_WHATSAPP
+ */
+export async function sendWhatsAppConfirmation(
+  payload: NotificationPayload
+): Promise<NotificationResult> {
+  return sendWhatsApp(payload, buildMessageBody(payload));
+}
+
 /** Dispara email + WhatsApp sin tumbar la reserva si fallan. */
 export async function dispatchAppointmentNotifications(
   payload: NotificationPayload
@@ -185,6 +259,37 @@ export async function dispatchAppointmentNotifications(
   const results = await Promise.all([
     sendEmailConfirmation(payload),
     sendWhatsAppConfirmation(payload),
+  ]);
+  return results;
+}
+
+/** Aviso al cambiar estado (admin o cliente). */
+export async function dispatchStatusChangeNotifications(
+  payload: StatusNotificationPayload
+): Promise<NotificationResult[]> {
+  const label = statusLabel(payload.status);
+  const text = buildStatusMessageBody(payload);
+  const title =
+    payload.status === "RESCHEDULED"
+      ? "Cita reprogramada"
+      : `Cita ${label}`;
+
+  const html = buildEmailHtml(payload, {
+    title,
+    statusLine: `Tu reserva en <strong>SIGMABARBER</strong> está <strong>${label}</strong>:`,
+  });
+
+  const results = await Promise.all([
+    sendEmail(payload, {
+      subject: `${title} — ${payload.date} ${payload.time}`,
+      text,
+      html,
+    }),
+    sendWhatsApp(
+      payload,
+      text,
+      `Cita ${label} — SIGMABARBER`
+    ),
   ]);
   return results;
 }

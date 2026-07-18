@@ -39,9 +39,12 @@ npm run dev
 | `/api/appointments` | Crea cita (lock anti doble-reserva + índice único de slot) |
 | `/admin` | Citas del día, horarios, catálogo (servicios/barberos) |
 | Notificaciones | Resend (email) + Twilio WhatsApp en `src/lib/notifications.ts` |
-| `/admin` → Horarios | Editar disponibilidad semanal por barbero |
+| `/admin` → Horarios | Semanal + días libres / excepciones por barbero |
+| `/cita/[id]?t=` | Cliente cancela o reprograma (enlace en email/WhatsApp) |
 
 Estados de cita: `PENDING` → `CONFIRMED` → `COMPLETED` / `CANCELLED`.
+
+Define `APP_URL` en producción para que los enlaces de gestión apunten bien.
 
 ## Notificaciones (paso 2)
 
@@ -53,6 +56,7 @@ Sin API keys la reserva **sigue funcionando**; email/WhatsApp se omiten con log 
 3. En producción: verifica tu dominio y usa `citas@tudominio.com`.
 
 ```env
+APP_URL="http://localhost:3000"
 RESEND_API_KEY=re_xxx
 RESEND_FROM_EMAIL="SIGMABARBER <onboarding@resend.dev>"
 # NOTIFY_OWNER_EMAIL="dueno@tudominio.com"

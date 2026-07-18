@@ -35,6 +35,12 @@ export default async function AdminPage() {
         availabilities: {
           orderBy: { dayOfWeek: "asc" },
         },
+        exceptions: {
+          where: {
+            date: { gte: new Date(`${today}T00:00:00.000Z`) },
+          },
+          orderBy: { date: "asc" },
+        },
       },
     }),
     prisma.service.findMany({
@@ -59,6 +65,16 @@ export default async function AdminPage() {
             endTime: row.endTime,
             breakStart: row.breakStart,
             breakEnd: row.breakEnd,
+          })),
+          exceptions: barber.exceptions.map((row) => ({
+            id: row.id,
+            date: format(row.date, "yyyy-MM-dd"),
+            isClosed: row.isClosed,
+            startTime: row.startTime,
+            endTime: row.endTime,
+            breakStart: row.breakStart,
+            breakEnd: row.breakEnd,
+            note: row.note,
           })),
         }))}
         services={services.map((service) => ({

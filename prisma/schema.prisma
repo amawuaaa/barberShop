@@ -21,6 +21,7 @@ model Barber {
   updatedAt      DateTime             @updatedAt
   appointments   Appointment[]
   availabilities BarberAvailability[]
+  exceptions     BarberException[]
 }
 
 model Service {
@@ -53,6 +54,29 @@ model BarberAvailability {
 
   @@unique([barberId, dayOfWeek])
   @@index([barberId])
+}
+
+/// Excepción puntual: día libre o horario especial (festivos, vacaciones, etc.)
+model BarberException {
+  id         String   @id @default(cuid())
+  barberId   String
+  barber     Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  /// Día afectado (medianoche UTC)
+  date       DateTime @db.Date
+  /// true = cerrado todo el día
+  isClosed   Boolean  @default(true)
+  /// Horario especial si no está cerrado
+  startTime  String?
+  endTime    String?
+  breakStart String?
+  breakEnd   String?
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([barberId, date])
+  @@index([barberId])
+  @@index([date])
 }
 
 enum AppointmentStatus {

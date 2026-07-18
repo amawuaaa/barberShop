@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { AppointmentStatus } from "@prisma/client";
-import { AdminScheduleEditor } from "@/components/admin/admin-schedule-editor";
+import {
+  AdminScheduleEditor,
+  type ExceptionRow,
+} from "@/components/admin/admin-schedule-editor";
 import {
   AdminCatalogEditor,
   type CatalogBarber,
@@ -39,6 +42,7 @@ type BarberWithSchedule = {
     breakStart: string | null;
     breakEnd: string | null;
   }[];
+  exceptions: ExceptionRow[];
 };
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -161,7 +165,7 @@ export function AdminDashboard({
           </h1>
           <p className="mt-1 text-[var(--steel)]">
             {tab === "citas" && <span className="capitalize">{titleDate}</span>}
-            {tab === "horarios" && "Horarios semanales por barbero"}
+            {tab === "horarios" && "Horarios, días libres y excepciones"}
             {tab === "catalogo" && "Servicios y barberos"}
           </p>
         </div>
